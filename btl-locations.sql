@@ -1,0 +1,69 @@
+/*
+ institutions
+ Name					   Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ INSTITUTION_ID 			   NOT NULL NUMBER(38)
+ IS_RECORD_DELETED			   NOT NULL CHAR(1)
+ INSTITUTE_CODE 				    NUMBER
+ RECORD_INSERTION_TIME				    TIMESTAMP(6) WITH TIME ZONE
+ RECORD_INSERTION_USER				    VARCHAR2(50)
+ RECORD_LASTUPDATE_TIME 			    TIMESTAMP(6) WITH TIME ZONE
+ RECORD_LASTUPDATE_USER 			    VARCHAR2(50)
+ NAME						    VARCHAR2(256)
+ COMMENT_DESCRIPTION				    VARCHAR2(4000)
+ TOWN						    VARCHAR2(128)
+ COUNTRY					    VARCHAR2(3)
+*/
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.INSTITUTIONS VALUES (
+       1000, 'F', 999988133, SYSDATE, 'organtin', NULL, NULL, 'CERN', 'CERN',
+       'Geneva', 'CH'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.INSTITUTIONS VALUES (
+       1001, 'F', 9999927891, SYSDATE, 'organtin', NULL, NULL, 'INFN-RM1', 'INFN Sez. di Roma',
+       'Roma', 'I'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.INSTITUTIONS VALUES (
+       1002, 'F', 997764020, SYSDATE, 'organtin', NULL, NULL, 'Caltech', 'California Institute of Technology',
+       'Pasadena', 'USA'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.INSTITUTIONS VALUES (
+       1003, 'F', 999923531, SYSDATE, 'organtin', NULL, NULL, 'INFN-MIB', 'INFN Sez. di Milano Bicocca',
+       'Milano', 'I'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.INSTITUTIONS VALUES (
+       1004, 'F', NULL, SYSDATE, 'organtin', NULL, NULL, 'Virginia', 'University of Virginia',
+       'Charlottesville', 'USA'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.INSTITUTIONS VALUES (
+       2000, 'F', NULL, SYSDATE, 'organtin', NULL, NULL, 'Virtual', 'Virtual Institution',
+       NULL, NULL
+);
+/*
+ locations
+ Name					   Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ LOCATION_ID				   NOT NULL NUMBER(38)
+ INSTITUTION_ID 				    NUMBER(38)
+ IS_RECORD_DELETED			   NOT NULL CHAR(1)
+ LOCATION_NAME				   NOT NULL VARCHAR2(40)
+ RECORD_INSERTION_TIME			   NOT NULL TIMESTAMP(6) WITH TIME ZONE
+ RECORD_INSERTION_USER			   NOT NULL VARCHAR2(50)
+ RECORD_LASTUPDATE_TIME 			    TIMESTAMP(6) WITH TIME ZONE
+ RECORD_LASTUPDATE_USER 			    VARCHAR2(50)
+ COMMENT_DESCRIPTION				    VARCHAR2(4000)
+*/
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.LOCATIONS VALUES (
+       1001, 1001, 'F', 'Roma', SYSDATE, 'organtin', NULL, NULL, 'Roma QC/QA Center'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.LOCATIONS VALUES (
+       1002, 1003, 'F', 'Milano', SYSDATE, 'organtin', NULL, NULL, 'Milano Bicocca BAC'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.LOCATIONS VALUES (
+       1003, 1004, 'F', 'UVA', SYSDATE, 'organtin', NULL, NULL, 'Virginia BAC'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.LOCATIONS VALUES (
+       1004, 1002, 'F', 'Caltech', SYSDATE, 'organtin', NULL, NULL, 'Caltech BAC'
+);
+INSERT INTO CMS_MTD_CORE_MANAGEMNT.LOCATIONS VALUES (
+       1005, 1000, 'F', 'CERN', SYSDATE, 'organtin', NULL, NULL, 'CERN BTL Lab'
+);
