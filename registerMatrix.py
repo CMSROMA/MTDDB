@@ -59,46 +59,6 @@ for o, a in opts:
 if batchIngot == '' or barcode == '' or producer == '':
     mtdcdb.mtdhelp(shrtOpts, longOpts, helpOpts, -2, hlp)
 
-'''
-def mtdcreateMatrix(barcode, producer, batchIngot, laboratory):
-    # create root element
-    root = mtdcdb.root()
-    parts = etree.SubElement(root, "PARTS")
-
-    # build the list of the attributes
-    attrs = []
-    attr = {}
-    attr['NAME'] = 'PRODUCER'
-    attr['VALUE'] = producer
-    attrs.append(attr)
-
-    # create the batch/ingot pair (the father)
-    bi = mtdcdb.part(str(batchIngot), 'Batch/Ingot', attrs, user = getpass.getuser(), location = laboratory)
-    attrs = []
-
-    # create the matrix part (a child of the batch)
-    matrix = etree.SubElement(bi, "CHILDREN")
-    LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
-    matrixxml = mtdcdb.part(barcode, LYSOMatrixtype, attrs, user = getpass.getuser(), location = laboratory)
-
-    # append the child to the father
-    matrix.append(matrixxml)
-
-    # create the single crystals as children of the matrix
-    for i in range(16):
-        singlextal = etree.SubElement(matrix, "CHILDREN")
-        cbarcode = barcode + '-' + str(i)
-        xtal = mtdcdb.part(cbarcode, 'singleBarCrystal', [], user = getpass.getuser(), location = laboratory)
-        singlextal.append(xtal)
-
-    # append the father to the root node
-    parts.append(bi)
-        
-    # parint xml
-    xml = etree.tostring(root, encoding='UTF-8', standalone = 'yes', xml_declaration=True, pretty_print=True)
-    print(xml.decode("utf-8"))
-'''
-
 mtdcdb.mtdcreateMatrix(barcode, Xtaltype, producer, batchIngot, laboratory)
 
 exit(0)
