@@ -15,7 +15,7 @@ This script is used to create the SQL statements needed to define parts and attr
 DB. It still has to be optimised, given that the statements are not yet in the right order
 (some of them depend on others). Nevertheless, it currently generates the SQL statements correctly.
 
-*mtdConstructionDBTools*
+**mtdConstructionDBTools**
 ======================
 This is a directory where the libraries used in current applications are stored
 
