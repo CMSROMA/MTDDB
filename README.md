@@ -3,11 +3,11 @@ Software for handling the construction DB
 
 **Browsing data**
 =============
-Data can be browsed using CMSDCADEV at [https://cmsdcadev.cern.ch/][https://cmsdcadev.cern.ch/]
+Data can be browsed using CMSDCADEV at https://cmsdcadev.cern.ch/
 
 **Using the CMSDCADEV browser outside CERN**
 ========================================
-Look at [https://security.web.cern.ch/recommendations/en/ssh_browsing.shtml][https://security.web.cern.ch/recommendations/en/ssh_browsing.shtml]
+Look at https://security.web.cern.ch/recommendations/en/ssh_browsing.shtml
 
 **btl_definition-v2.py**
 ====================
