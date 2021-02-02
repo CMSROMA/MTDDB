@@ -204,6 +204,14 @@ print(roUnit3.sqlAttribute(1, 'position in Tray', 6))
 # decay time
 # ly
 
+# manufacturers
+# =============
+
+manufacturer = {}
+for i in range(12):
+    j = i + 1
+    manufacturer['MANUFACTURER_NAME'] = f"'Producer_{j}'"
+    print(insert('MANUFACTURERS', manufacturer))
 
 
 
