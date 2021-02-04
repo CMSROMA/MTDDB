@@ -70,3 +70,4 @@ def mtdhelp(shrtOpts, longOpts, helpOpts, err = 0, hlp = ''):
     for i in range(len(shrtOpts)):
         print('       ' + shrtOpts[i] + ' ('+ longOpts[i] + '): ' + helpOpts[i])
     exit(err)
+

@@ -114,6 +114,19 @@ class Child(Component):
     def __init__(self, name, description, id, subdetectorId = 2000, isVirtual = False, extension = 'PARTS'):
         super().__init__(name, description, id)
 
+class Condition:
+    def __init__(self, name, comment = None):
+        self.name = name
+        self.comment = ''
+        if comment != None:
+            self.comment = comment
+    def create(self):
+        table_name = self.name.replace(' ', '_')
+        ret = 'INSERT INTO CMS_MTD_CORE_COND.KINDS_OF_CONDITIONS '
+        ret += '(NAME, IS_RECORD_DELETED, EXTENSION_TABLE_NAME, COMMENT_DESCRIPTION) ' 
+        ret += "VALUES ('{}', 'F', '{}', '{}');".format(self.name, table_name, self.comment)
+        return ret
+        
 # define the parts of the detector, starting from the most elementary
 batchIngot = Child('Batch/Ingot', 'Batch and ingot information for LYSO crystals', 1, isVirtual = True)
 
@@ -213,5 +226,10 @@ for i in range(12):
     manufacturer['MANUFACTURER_NAME'] = f"'Producer_{j}'"
     print(insert('MANUFACTURERS', manufacturer))
 
+# conditions
+# ==========
+
+registration = Condition('Comment')
+print(registration.create())
 
 
