@@ -1,11 +1,12 @@
 from lxml import etree
 import sys
+import os
 import getpass
 
 def attribute(parent, name, value):
     attribute = etree.SubElement(parent, "ATTRIBUTE")
     name = etree.SubElement(attribute, "NAME").text = name
-    value = etree.SubElement(attribute, "VALUE").text = value
+    value = etree.SubElement(attribute, "VALUE").text = str(value)
     return attribute
     
 def part(barcode, kind_of_part, attributes, user = 'organtin', location = 'testLab'):
@@ -25,13 +26,14 @@ def root():
 
 def mtdcreateMatrix(barcode, Xtaltype, producer, batchIngot, laboratory):
     # create root element
-    root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
-    parts = etree.SubElement(root, "PARTS")
+    #root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
+    myroot = root()
+    parts = etree.SubElement(myroot, "PARTS")
 
     # build the list of the attributes
     attrs = []
     attr = {}
-    attr['NAME'] = 'PRODUCER'
+    attr['NAME'] = 'MANUFACTURE_NAME'
     attr['VALUE'] = producer
     attrs.append(attr)
 
@@ -48,22 +50,28 @@ def mtdcreateMatrix(barcode, Xtaltype, producer, batchIngot, laboratory):
     matrix.append(matrixxml)
 
     # create the single crystals as children of the matrix
+    singlextal = etree.SubElement(matrixxml, "CHILDREN")
+    xtal = ''
     for i in range(16):
-        singlextal = etree.SubElement(matrix, "CHILDREN")
         cbarcode = barcode + '-' + str(i)
         xtal = part(cbarcode, 'singleBarCrystal', [], user = getpass.getuser(), location = laboratory)
         singlextal.append(xtal)
 
     # append the father to the root node
     parts.append(bi)
-        
-    # parint xml
-    xml = etree.tostring(root, encoding='UTF-8', standalone = 'yes', xml_declaration=True, pretty_print=True)
-    print(xml.decode("utf-8"))
+    return mtdxml(myroot)
+
+def mtdxml(root):
+    # print xml
+    return etree.tostring(root, encoding='UTF-8', standalone = 'yes', xml_declaration=True,
+                          pretty_print=True).decode("utf-8")
 
 def mtdhelp(shrtOpts, longOpts, helpOpts, err = 0, hlp = ''):
-    print('Usage: registerMatrix.py [options]')
-    print('       ' + hlp)
+    print(f'Usage: {sys.argv[0]} [options]')
+    if len(hlp) > 0:
+        hlp = hlp.split('\n')
+        for s in hlp:
+            print('       ' + s)
     print()
     shrtOpts = shrtOpts.replace(':', '')
     longOpts = [s.replace('=', '=<value>') for s in longOpts]
