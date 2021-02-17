@@ -133,6 +133,10 @@ if os.path.exists(xmlfile):
     
 fxml = open(xmlfile, "w")
 
+# the root XML document containing parts
+myroot = mtdcdb.root()
+parts = etree.SubElement(myroot, "PARTS")
+
 import pandas as pd
 if csvfile != None:
     matrices = pd.read_csv(csvfile, sep = ';')
@@ -144,8 +148,9 @@ if csvfile != None:
         barcode = 'PRE{:010d}'.format(int(row['Barcode']))
         producer = row['Producer']
         print(f'Registering matrix {barcode} of type {partType} made by producer {producer}')
-        xml = mtdcdb.mtdcreateMatrix(barcode, Xtaltype, producer, batchIngot, laboratory)
-        fxml.write(xml)
+        myroot = mtdcdb.mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, laboratory)
+        
+    fxml.write(mtdcdb.mtdxml(myroot))
 
 elif barcode != '':
     try:
@@ -157,8 +162,9 @@ elif barcode != '':
         partType = f'LYSOMatrix #{Xtaltype}'
         sbarcode = 'PRE{:010d}'.format(bc)
         print(f'Registering matrix {sbarcode} of type {Xtaltype} made by producer {producer}')
-        fxml.write(mtdcdb.mtdcreateMatrix(sbarcode, Xtaltype, producer, batchIngot, laboratory))
+        myroot = mtdcdb.mtdcreateMatrix(myroot, parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
         bc += 1
+    fxml.write(mtdcdb.mtdxml(myroot))
 
 fxml.close()
 

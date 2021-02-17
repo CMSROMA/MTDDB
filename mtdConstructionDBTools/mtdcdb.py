@@ -9,36 +9,34 @@ def attribute(parent, name, value):
     value = etree.SubElement(attribute, "VALUE").text = str(value)
     return attribute
     
-def part(barcode, kind_of_part, attributes, user = 'organtin', location = 'testLab'):
+def part(barcode, kind_of_part, attributes, manufacturer = None, user = 'organtin', location = 'testLab'):
     part = etree.Element("PART", mode = "auto")
     kind_of_part = etree.SubElement(part, "KIND_OF_PART").text = kind_of_part
     barcode = etree.SubElement(part, "BARCODE").text = barcode
     record_insertion = etree.SubElement(part, "RECORD_INSERTION_USER").text = user
     location = etree.SubElement(part, "LOCATION").text = location
+    if manufacturer != None:
+        manufacturer = etree.SubElement(part, "MANUFACTURER").text = 'Producer_' + str(manufacturer)
     predefined_attributes = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
-    for attr in attributes:
-        attribute(predefined_attributes, attr['NAME'], attr['VALUE'])
+    if attributes != None:
+        for attr in attributes:
+            attribute(predefined_attributes, attr['NAME'], attr['VALUE'])
     return part
 
 def root():
     root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
     return root
 
-def mtdcreateMatrix(barcode, Xtaltype, producer, batchIngot, laboratory):
-    # create root element
-    #root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
-    myroot = root()
-    parts = etree.SubElement(myroot, "PARTS")
-
-    # build the list of the attributes
+def mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, laboratory):
+    # build the list of the attributes, if any
     attrs = []
     attr = {}
-    attr['NAME'] = 'MANUFACTURE_NAME'
-    attr['VALUE'] = producer
     attrs.append(attr)
+    attrs = None
 
     # create the batch/ingot pair (the father)
-    bi = part(str(batchIngot), 'Batch/Ingot', attrs, user = getpass.getuser(), location = laboratory)
+    bi = part(str(batchIngot), 'Batch/Ingot', attrs, user = getpass.getuser(), location = laboratory,
+              manufacturer = producer)
     attrs = []
 
     # create the matrix part (a child of the batch)
@@ -59,7 +57,7 @@ def mtdcreateMatrix(barcode, Xtaltype, producer, batchIngot, laboratory):
 
     # append the father to the root node
     parts.append(bi)
-    return mtdxml(myroot)
+    return myroot
 
 def mtdxml(root):
     # print xml
