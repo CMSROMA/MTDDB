@@ -36,14 +36,14 @@ def mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, labo
     attrs = None
 
     # create the batch/ingot pair (the father)
-    bi = part(str(batchIngot), 'Batch/Ingot', attrs, user = getpass.getuser(), location = laboratory,
-              manufacturer = producer)
+    bi = part(str(batchIngot), 'Batch/Ingot', attrs, user = getpass.getuser(), location = laboratory)
     attrs = []
 
     # create the matrix part (a child of the batch)
     matrix = etree.SubElement(bi, "CHILDREN")
     LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
-    matrixxml = part(barcode, LYSOMatrixtype, attrs, user = getpass.getuser(), location = laboratory)
+    matrixxml = part(barcode, LYSOMatrixtype, attrs, user = getpass.getuser(), location = laboratory,
+                     manufacturer = producer)
 
     # append the child to the father
     matrix.append(matrixxml)
