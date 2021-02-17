@@ -27,6 +27,6 @@ Script used to generate the XML code to register a batch (to be updated)
 =====================
 Script used to generate the XML code to register single crystals (to be updated)
 
-**registerMatrix.py**
-=================
+**registerMatrixBatch.py**
+======================
 Script used to generate the XML code to register LYSO matrices
