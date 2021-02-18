@@ -9,10 +9,13 @@ def attribute(parent, name, value):
     value = etree.SubElement(attribute, "VALUE").text = str(value)
     return attribute
     
-def part(barcode, kind_of_part, attributes = None, manufacturer = None, user = 'organtin', location = 'testLab'):
+def part(barcode, kind_of_part, attributes = None, manufacturer = None, user = 'organtin',
+         location = 'testLab', serial = None):
     part = etree.Element("PART", mode = "auto")
     kind_of_part = etree.SubElement(part, "KIND_OF_PART").text = kind_of_part
     barcode = etree.SubElement(part, "BARCODE").text = barcode
+    if serial != None:
+        serial = etree.SubElement(part, "SERIAL_NUMBER").text = serial
     record_insertion = etree.SubElement(part, "RECORD_INSERTION_USER").text = user
     location = etree.SubElement(part, "LOCATION").text = location
     if manufacturer != None:
@@ -27,7 +30,7 @@ def root():
     root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
     return root
 
-def mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, laboratory):
+def mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, laboratory, serial = 'None'):
     # build the list of the attributes, if any
     attrs = []
     attr = {}
@@ -43,7 +46,7 @@ def mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, labo
     matrix = etree.SubElement(bi, "CHILDREN")
     LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
     matrixxml = part(barcode, LYSOMatrixtype, attrs, user = getpass.getuser(), location = laboratory,
-                     manufacturer = producer)
+                     manufacturer = producer, serial = serial)
 
     # append the child to the father
     matrix.append(matrixxml)

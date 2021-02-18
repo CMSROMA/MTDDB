@@ -17,7 +17,7 @@ from mtdConstructionDBTools import mtdcdb
 
 PRODUCER_MAX = 12
 
-shrtOpts = 'hb:b:p:t:l:f:o:n:'
+shrtOpts = 'hb:x:p:t:l:f:o:n:'
 longOpts = ['help', 'batch=', 'barcode=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
             'n=']
 helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
@@ -27,7 +27,9 @@ helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'specify the laboratory in which the registration is done (default = Roma)',
             'the filename of a CSV file formatted such as the barcodes are under the \n' +
             '         "Barcode" column while the tickness is given in a column named "T (mm)".\n' +
-            '         The producer is expected in column "Producer"',
+            '         The producer is expected in column "Producer". An optional column\n' +
+            '         "Serial Number" is expected to contain the corresponding information.\n' +
+            '         It can be left blank.',
             'the filename of the XML output file',
             'the number of barcodes to generate']
 
@@ -59,7 +61,7 @@ for o, a in opts:
         mtdcdb.mtdhelp(shrtOpts, longOpts, helpOpts, 0, hlp)
     elif o in ('b', '--batch'):
         batchIngot = a
-    elif o in ('b', '--barcode'):
+    elif o in ('x', '--barcode'):
         barcode = a
     elif o in ('f', '--file'):
         csvfile = a
@@ -123,7 +125,10 @@ if errors != 0:
 xtaltype = {
     "3,75": "1",
     "3,00": "2",
-    "2,40": "3"
+    "2,40": "3",
+    "3.75": "1",
+    "3.00": "2",
+    "2.40": "3"
     }
 
 # check if output file exists
@@ -139,16 +144,31 @@ parts = etree.SubElement(myroot, "PARTS")
 
 import pandas as pd
 if csvfile != None:
-    matrices = pd.read_csv(csvfile, sep = ';')
+    matrices = pd.read_csv(csvfile, sep = None, engine = 'python')
+    # normalise column headers ignoring case, leading and trailing spaces and unwanted characters
+    matrices.columns = matrices.columns.str.lower()
+    matrices.columns = matrices.columns.str.strip()
+    matrices.columns = matrices.columns.str.replace(' ','')
+
     print(matrices)
 
     for index, row in matrices.iterrows():    
-        Xtaltype = xtaltype[row['T (mm)']]
+        Xtaltype = xtaltype[row['t(mm)']].strip()
         partType = f'LYSOMatrix #{Xtaltype}'
-        barcode = 'PRE{:010d}'.format(int(row['Barcode']))
-        producer = row['Producer']
-        print(f'Registering matrix {barcode} of type {partType} made by producer {producer}')
-        myroot = mtdcdb.mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, laboratory)
+        barcode = 'PRE{:010d}'.format(int(row['barcode']))
+        producer = row['producer']
+        serialNumber = None
+        if 'serialnumber' in matrices.columns:
+            serialNumber = str(row['serialnumber']).strip()
+            if len(serialNumber) == 0 or serialNumber == 'nan':
+                serialNumber = None
+        print(f'Registering matrix {barcode} of type {partType} made by producer {producer}', end = '')
+        if serialNumber != None:
+            print(f' (serial #: {serialNumber})')
+        else:
+            print()
+        myroot = mtdcdb.mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, laboratory,
+                                        serial = serialNumber)
         
     fxml.write(mtdcdb.mtdxml(myroot))
 
