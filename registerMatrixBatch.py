@@ -26,8 +26,8 @@ helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'specify the matrix type (thickness) [1, 2 or 3]',
             'specify the laboratory in which the registration is done (default = Roma)',
             'the filename of a CSV file formatted such as the barcodes are under the \n' +
-            '         "Barcode" column while the tickness is given in a column named "T (mm)".\n' +
-            '         The producer is expected in column "Producer". An optional column\n' +
+            '         "Barcode" column while the tickness is given in mm in a column named "T (mm)".\n' +
+            '         The producer is expected in column "Producer" (1-12). An optional column\n' +
             '         "Serial Number" is expected to contain the corresponding information.\n' +
             '         It can be left blank.',
             'the filename of the XML output file',
