@@ -30,3 +30,8 @@ Script used to generate the XML code to register single crystals (to be updated)
 **registerMatrixBatch.py**
 ======================
 Script used to generate the XML code to register LYSO matrices
+
+**gen_create_condition_sql.pl**
+===========================
+This script generates the SQL command to create tables for conditions.
+It uses ``btl_conditions_template.sql`` as a template.
