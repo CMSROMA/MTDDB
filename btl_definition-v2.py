@@ -229,7 +229,7 @@ for i in range(12):
 # conditions
 # ==========
 
-registration = Condition('Comment')
+registration = Condition('LYSOMATRIX VISUALINSPECTION')
 print(registration.create())
 
 
