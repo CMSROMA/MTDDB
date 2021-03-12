@@ -57,15 +57,15 @@ nbarcodes = 1
 errors = 0
 
 for o, a in opts:
-    if o in ('h', '--help'):
+    if o in ('-h', '--help'):
         mtdcdb.mtdhelp(shrtOpts, longOpts, helpOpts, 0, hlp)
-    elif o in ('b', '--batch'):
+    elif o in ('-b', '--batch'):
         batchIngot = a
-    elif o in ('x', '--barcode'):
+    elif o in ('-x', '--barcode'):
         barcode = a
-    elif o in ('f', '--file'):
+    elif o in ('-f', '--file'):
         csvfile = a
-    elif o in ('p', '--producer'):
+    elif o in ('-p', '--producer'):
         prd = int(a)
         if float(a).is_integer() and 0 < prd < (PRODUCER_MAX + 1):
             producer = a
@@ -75,19 +75,19 @@ for o, a in opts:
         if prd < 1 or prd > PRODUCER_MAX:
             errors += 1
             print(f'[*** ERR ***] the producer must be within 1 and {PRODUCER_MAX}')
-    elif o in ('t', '--type'):
+    elif o in ('-t', '--type'):
         tp = int(a)
         if float(a).is_integer() and 0 < tp < 4:
             Xtaltype = a
         if (not float(a).is_integer()) or tp < 1 or tp > 3:
             errors += 1
             print('[*** ERR ***] the type must be either 1, 2 or 3')
-    elif o in ('l', '--lab'):
+    elif o in ('-l', '--lab'):
         if a in ['Roma', 'Milano', 'UVA', 'Caltech', 'CERN']:
             laboratory = a
-    elif o in ('o', '--output'):
+    elif o in ('-o', '--output'):
         xmlfile = a
-    elif o in ('n', '--n'):
+    elif o in ('-n', '--n'):
         nn = int(a)
         if float(a).is_integer():
             nbarcodes = nn
@@ -176,7 +176,7 @@ elif barcode != '':
     try:
         bc = int(barcode)
     except ValueError:
-        print('[*** ERR ***] when n > 1 barcode must be an integer')
+        print('[*** ERR ***] barcode must be an integer')
         exit(-1)
     for i in range(nbarcodes):
         partType = f'LYSOMatrix #{Xtaltype}'
