@@ -17,9 +17,9 @@ from mtdConstructionDBTools import mtdcdb
 
 PRODUCER_MAX = 12
 
-shrtOpts = 'hb:x:p:t:l:f:o:n:'
+shrtOpts = 'hb:x:p:t:l:f:o:n:w'
 longOpts = ['help', 'batch=', 'barcode=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=']
+            'n=', 'write']
 helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'specify the barcode of the matrix',
             'specify the producer index [0 < index < {}]'.format(PRODUCER_MAX),
@@ -31,7 +31,8 @@ helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             '         "Serial Number" is expected to contain the corresponding information.\n' +
             '         It can be left blank.',
             'the filename of the XML output file',
-            'the number of barcodes to generate']
+            'the number of barcodes to generate',
+            'upload the XML file automatically at the end of the processing (requires --file)']
 
 hlp = ('Generates the XML file needed to register one or more LYSO matrices.\n' 
       'If you provide a CSV file name, all the matrices included in the file\n' 
@@ -53,6 +54,7 @@ csvfile = None
 laboratory = 'Roma'
 xmlfile = sys.argv[0].replace('.py', '.xml')
 nbarcodes = 1
+write = False
 
 errors = 0
 
@@ -91,6 +93,8 @@ for o, a in opts:
         nn = int(a)
         if float(a).is_integer():
             nbarcodes = nn
+    elif o in ('-w', '--write'):
+        write = True
     else:
         assert False, 'unhandled option'
 
@@ -187,6 +191,9 @@ elif barcode != '':
     fxml.write(mtdcdb.mtdxml(myroot))
 
 fxml.close()
+
+if write:
+    writeToDB(filename = xmlfile)
 
 exit(0)
 

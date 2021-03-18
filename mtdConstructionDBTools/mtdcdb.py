@@ -2,6 +2,9 @@ from lxml import etree
 import sys
 import os
 import getpass
+import subprocess
+import re
+from datetime import datetime
 
 def attribute(parent, name, value):
     attribute = etree.SubElement(parent, "ATTRIBUTE")
@@ -80,4 +83,50 @@ def mtdhelp(shrtOpts, longOpts, helpOpts, err = 0, hlp = ''):
     for i in range(len(shrtOpts)):
         print('       ' + shrtOpts[i] + ' ('+ longOpts[i] + '): ' + helpOpts[i])
     exit(err)
+
+def newrun(name, comment = None, user = None, begin = None, location = None, runtype = None,
+        runnumber = None):
+    if begin == None:
+        now = datetime.now()
+        begin = now.strftime("%Y-%m-$d %H:%M:%S")
+    return 0
+
+
+def finishrun(run_id, user = None, time = None, comment = None, end = None): 
+    if end == None:
+        now = datetime.now()
+        begin = now.strftime("%Y-%m-$d %H:%M:%S")
+    return 0
+
+def newcondition(part_id, run_id, kind_of_condition, user = None, comment = None):
+    return 0
+
+def visualInspectionComment(part_id, comment, user = None, time = None, location = 'Roma'):
+    return 0
+    
+def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml'):
+    if filename != 'registerMatrixBatch.xml':
+        user = getpass.getuser()
+        subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
+                        filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' + filename])
+        print('File uploaded...waiting for completion...')
+        sleep(10)
+        cp = subprocess.run(['ssh', '-p',
+                             str(port), user + '@localhost',
+                             'cat /home/dbspool/logs/mtd/int2r/' +
+                             filename],
+                            capture_output = True)
+        ret = -1
+        # get the last line of the log file
+        l = str(cp.stdout)
+        lst = l.split('\\n')
+        if len(lst) >= 2:
+            l = lst[-2]
+            if re.match('.* - commit transaction', l):
+                ret = 0
+                print('    SUCCESS    ')
+        else:
+            print('*** ERR *** ' + l)
+    else:
+        print('*** ERR *** xml filename is mandatory. Cannot use the default one')
 
