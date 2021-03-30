@@ -99,7 +99,7 @@ for o, a in opts:
     elif o in ('-w', '--write'):
         write = True
     elif o in ('-u', '--user'):
-        username = getpass.getuser() 
+        username = a
     else:
         assert False, 'unhandled option'
 
