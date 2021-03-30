@@ -105,14 +105,18 @@ def newcondition(part_id, run_id, kind_of_condition, user = None, comment = None
 def visualInspectionComment(part_id, comment, user = None, time = None, location = 'Roma'):
     return 0
     
-def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False):
+def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False, user = None):
     if filename != 'registerMatrixBatch.xml':
-        user = getpass.getuser()
+        if user == None:
+            user = getpass.getuser()
         if not dryrun:
             subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
                             filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' + filename])
-        print('File uploaded...waiting for completion...')
-        time.sleep(10)
+        for i in range(10, 0, -1):
+            sys.stdout.write('File uploaded...waiting for completion...' + str(i)+'    \r')
+            sys.stdout.flush()
+            time.sleep(1)
+        print('File uploaded...waiting for completion...done')
         l = 'This is a dry run'
         if not dryrun:
             cp = subprocess.run(['ssh', '-p',
@@ -131,6 +135,12 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
                 print('    SUCCESS    ')
         else:
             print('*** ERR *** ' + l)
+            print('(*) DB uploading can take time to complete. The above message is a guess.')
+            print('    Please check using the web interface https://cmsdcadev.cern.ch/mtd_int2r/')
+            print('    to verify if data has been, at least partially, uploaded.')
+            print('    You can even browse the whole log file using the following command')
+            print('    ssh -p 50022 <your-cern-username>@localhost cat /home/dbspool/logs/mtd/int2r/' +
+                  filename)
     else:
         print('*** ERR *** xml filename is mandatory. Cannot use the default one')
 

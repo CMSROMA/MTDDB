@@ -17,9 +17,9 @@ from mtdConstructionDBTools import mtdcdb
 
 PRODUCER_MAX = 12
 
-shrtOpts = 'hb:x:p:t:l:f:o:n:w'
+shrtOpts = 'hb:x:p:t:l:f:o:n:wu:'
 longOpts = ['help', 'batch=', 'barcode=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=', 'write']
+            'n=', 'write', 'user']
 helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'specify the barcode of the matrix',
             'specify the producer index [0 < index < {}]'.format(PRODUCER_MAX),
@@ -32,13 +32,16 @@ helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             '         It can be left blank.',
             'the filename of the XML output file',
             'the number of barcodes to generate',
-            'upload the XML file automatically at the end of the processing (requires --file)']
+            'upload the XML file automatically at the end of the processing (requires --file)',
+            'the CERN username authorised to permanently write data to DB (default to current username)']
 
 hlp = ('Generates the XML file needed to register one or more LYSO matrices.\n' 
-      'If you provide a CSV file name, all the matrices included in the file\n' 
-      'are processed. If you provide a single barcode, this script generates\n' 
-      'the XML for just the given barcode. Providing option n, generates n.\n' 
-      'matrices whose barcode starts with barcode and ends with barcode + n')
+       'If you provide a CSV file name, all the matrices included in the file\n' 
+       'are processed. If you provide a single barcode, this script generates\n' 
+       'the XML for just the given barcode. Providing option n, generates n.\n' 
+       'matrices whose barcode starts with barcode and ends with barcode + n.\n\n'
+       'In order to ship data to CERN, you need to setup a tunnel as follows:\n'
+       'ssh -L 50022:dbloader-mtd.cern.ch:22 <your-cern-username>@lxplus.cern.ch')
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], shrtOpts, longOpts)
@@ -95,6 +98,8 @@ for o, a in opts:
             nbarcodes = nn
     elif o in ('-w', '--write'):
         write = True
+    elif o in ('-u', '--user'):
+        username = getpass.getuser() 
     else:
         assert False, 'unhandled option'
 
@@ -193,7 +198,7 @@ elif barcode != '':
 fxml.close()
 
 if write:
-    mtdcdb.writeToDB(filename = xmlfile)
+    mtdcdb.writeToDB(filename = xmlfile, user = username)
 
 exit(0)
 
