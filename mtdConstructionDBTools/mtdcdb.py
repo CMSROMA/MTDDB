@@ -4,6 +4,7 @@ import os
 import getpass
 import subprocess
 import re
+import time
 from datetime import datetime
 
 def attribute(parent, name, value):
@@ -104,21 +105,24 @@ def newcondition(part_id, run_id, kind_of_condition, user = None, comment = None
 def visualInspectionComment(part_id, comment, user = None, time = None, location = 'Roma'):
     return 0
     
-def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml'):
+def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False):
     if filename != 'registerMatrixBatch.xml':
         user = getpass.getuser()
-        subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
-                        filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' + filename])
+        if not dryrun:
+            subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
+                            filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' + filename])
         print('File uploaded...waiting for completion...')
-        sleep(10)
-        cp = subprocess.run(['ssh', '-p',
-                             str(port), user + '@localhost',
-                             'cat /home/dbspool/logs/mtd/int2r/' +
-                             filename],
-                            capture_output = True)
+        time.sleep(10)
+        l = 'This is a dry run'
+        if not dryrun:
+            cp = subprocess.run(['ssh', '-p',
+                                 str(port), user + '@localhost',
+                                 'cat /home/dbspool/logs/mtd/int2r/' +
+                                 filename],
+                                capture_output = True)
+            # get the last line of the log file
+            l = str(cp.stdout)
         ret = -1
-        # get the last line of the log file
-        l = str(cp.stdout)
         lst = l.split('\\n')
         if len(lst) >= 2:
             l = lst[-2]

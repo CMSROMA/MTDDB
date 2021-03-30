@@ -193,7 +193,7 @@ elif barcode != '':
 fxml.close()
 
 if write:
-    writeToDB(filename = xmlfile)
+    mtdcdb.writeToDB(filename = xmlfile, dryrun = True)
 
 exit(0)
 
