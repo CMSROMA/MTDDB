@@ -34,7 +34,7 @@ def root():
     root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
     return root
 
-def mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, laboratory, serial = 'None'):
+def mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory, serial = 'None'):
     # build the list of the attributes, if any
     attrs = []
     attr = {}
@@ -65,7 +65,7 @@ def mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, labo
 
     # append the father to the root node
     parts.append(bi)
-    return myroot
+    return parts
 
 def mtdxml(root):
     # print xml
@@ -99,12 +99,14 @@ def finishrun(run_id, user = None, time = None, comment = None, end = None):
         begin = now.strftime("%Y-%m-$d %H:%M:%S")
     return 0
 
+'''
 def newcondition(part_id, run_id, kind_of_condition, user = None, comment = None):
     return 0
 
 def visualInspectionComment(part_id, comment, user = None, time = None, location = 'Roma'):
     return 0
-    
+'''
+
 def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False, user = None):
     if filename != 'registerMatrixBatch.xml':
         if user == None:
@@ -144,3 +146,43 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
     else:
         print('*** ERR *** xml filename is mandatory. Cannot use the default one')
 
+def addDataSet(parent, barcode, dataset):
+    part = etree.SubElement(parent, "PART")
+    etree.SubElement(part, "BARCODE").text = barcode
+    data = etree.SubElement(parent, "DATA")
+    for d in dataset:
+        name = d['name']
+        etree.SubElement(data, name).text = d['value']
+        
+def condition(cmntroot, barcode, condition_name, condition_dataset, run = None, location = None,
+              comment = None):
+    if run == None:
+        print('*** WARNING *** : conditions given, but no run details provided.')
+        return
+    cond = etree.SubElement(cmntroot, "HEADER")
+    cond_type = etree.SubElement(cond, "TYPE")
+    etree.SubElement(cond_type, "NAME").text = condition_name
+    etree.SubElement(cond_type, "EXTENSION_TABLE_NAME").text = condition_name.replace(' ', '_')
+    runElem = etree.SubElement(cond, "RUN")
+    if type(run) is str:
+        etree.SubElement(runElem, "RUN_NAME").text = run
+    else:
+        etree.SubElement(runElem, "RUN_TYPE").text = run['type']
+        etree.SubElement(runElem, "RUN_NUMBER").text = run['number']
+    if location != None:
+        etree.SubElement(runElem, "LOCATION").text = location
+    if comment != None:
+        etree.SubElement(runElem, "COMMENT_DESCRIPTION").text = comment
+    now = datetime.now()
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    etree.SubElement(runElem, "RUN_BEGIN_TIMESTAMP").text = current_time
+    etree.SubElement(runElem, "RUN_END_TIMESTAMP").text = current_time
+    dataset = etree.SubElement(cmntroot, "DATA_SET")
+    addDataSet(dataset, barcode, condition_dataset)
+
+def addVisualInspectionComment(cmntroot, barcode, comment, location = None, description = None):
+    aComment = condition(cmntroot, barcode,
+                         'LYSOMATRIX VISUALINSPECTION', [{"name": "OPERATOR_COMMENT",
+                                                          "value": comment}],
+                         run = 'Visual Inspection', location = location, comment = description)
+    

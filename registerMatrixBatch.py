@@ -146,6 +146,8 @@ if os.path.exists(xmlfile):
     exit(-1)
     
 fxml = open(xmlfile, "w")
+fxmlcond = open('cond-' + xmlfile, "w")
+condXml = None
 
 # the root XML document containing parts
 myroot = mtdcdb.root()
@@ -166,6 +168,12 @@ if csvfile != None:
         partType = f'LYSOMatrix #{Xtaltype}'
         barcode = 'PRE{:010d}'.format(int(row['barcode']))
         producer = row['producer']
+        comment = row['comments']
+        if type(comment) is str and len(comment) > 0:
+            if condXml == None:
+                condXml = mtdcdb.root()
+            mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma',
+                                              description = 'preproduction crystals: these comments were added after actual registration')
         serialNumber = None
         if 'serialnumber' in matrices.columns:
             serialNumber = str(row['serialnumber']).strip()
@@ -176,10 +184,11 @@ if csvfile != None:
             print(f' (serial #: {serialNumber})')
         else:
             print()
-        myroot = mtdcdb.mtdcreateMatrix(myroot, parts, barcode, Xtaltype, producer, batchIngot, laboratory,
+        myroot = mtdcdb.mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory,
                                         serial = serialNumber)
         
     fxml.write(mtdcdb.mtdxml(myroot))
+    fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 elif barcode != '':
     try:
@@ -191,11 +200,13 @@ elif barcode != '':
         partType = f'LYSOMatrix #{Xtaltype}'
         sbarcode = 'PRE{:010d}'.format(bc)
         print(f'Registering matrix {sbarcode} of type {Xtaltype} made by producer {producer}')
-        myroot = mtdcdb.mtdcreateMatrix(myroot, parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
+        myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
         bc += 1
     fxml.write(mtdcdb.mtdxml(myroot))
+    fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 fxml.close()
+fxmlcond.close()
 
 if write:
     mtdcdb.writeToDB(filename = xmlfile, user = username)

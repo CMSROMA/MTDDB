@@ -3,6 +3,8 @@
 use Getopt::Long;
 
 my $table_name;
+my $part_name;
+my $condition_name;
 my $table_shortname;
 my @column;
 my @colum_type;
@@ -10,22 +12,26 @@ my @colum_type;
 $argc = length(@ARGV);
 
 sub help {
-    print "Usage: $0 --name [table_name] <options>\n";
+    print "Usage: $0 --name [table_name] --part [part_name] <options>\n";
     print "       Generates the SQL commands to create the table [table_name].\n";
     print "       [table_name]: the name of the table to create\n";
     print "\n";
+    print "--condition condition_name: is the name of the condition to generate\n";
+    print "            (by default it is the table_name with underscores substituted \n";
+    print "            by blanks)";
     print "--shortname short_name: provides a shorter version of\n";
     print "            the name of the table. Mandatory if the name\n";
-    print "            is longer than 25 characters.\n";
-    print "--column    column_name: the name of a data column in the table.\n";
-    print "            if the columns can be NULL, prepend a @ to its name.\n";
+    print "            is longer than 40 characters.\n";
+    print "--column    column_name: column name of data to be stored in the table.\n";
+    print "            If the column can be NULL, prepend a @ to its name.\n";
     print "--type      column_type: the SQL type of the column in the table.\n";
     print "\nOptions --column and --type can be repeated as many times\n";
     print "as needed. If type contains ( or ), the type must be given in quotes.\n";
 }
 
 GetOptions("name=s"      => \$table_name,
-	   "shortname=s" => \$table_shortname,
+	   "part=s"      => \$part_name,
+	   "condition=s" => \$condition_name,
 	   "column=s"    => \@column,
 	   "type=s"      => \@column_type);
 
@@ -35,11 +41,21 @@ if (length($table_name) <= 0) {
     exit(-1);
 }
 
-if (length($table_shortname) == 0) {
-    $table_shortname = $table_name;
-} 
+$table_shortname = $table_name;
+$table_shortname =~ s/[A,E,I,O,U,a,e,i,o,u]//g;
 
-if (length($table_shortname) > 25) {
+if (length($part_name) == 0) {
+    print "ERR: no part name given\n";
+    help();
+    exit(-1);
+}
+
+if (length($condition_name) == 0) {
+    $condition_name = $table_name;
+    $condition_name =~ s/_/ /g;
+}
+
+if (length($table_shortname) > 40) {
     print "ERR: table short name is too long\n";
     help();
     exit(-2);
@@ -61,7 +77,10 @@ if ($n != $nt) {
 }
 
 $cmd = "cat btl_conditions_template.sql | sed -e 's/TEMPLATE_NAME/$table_name/g' |" .
-    " sed -e 's/TEMPLATE_SHRTNAME/$table_shortname/g' > gen_create_condition_sql.sql";
+    " sed -e 's/TEMPLATE_SHRTNAME/$table_shortname/g' |" .
+    " sed -e 's/TEMPLATE_PART_NAME/$part_name/g' |" .
+    " sed -e 's/TEMPLATE_CONDITION_NAME/$condition_name/g'" .
+    " > gen_create_condition_sql.sql";
 
 `$cmd`;
 
