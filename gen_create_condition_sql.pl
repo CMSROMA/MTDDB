@@ -13,6 +13,7 @@ my @colum_type;
 $argc = length(@ARGV);
 
 sub help {
+    print "\n";
     print "Usage: $0 --name [table_name] --part [part_name] --comment [comment] <options>\n";
     print "       Generates the SQL commands to create the table [table_name].\n";
     print "       [table_name]: the name of the table to create\n";
@@ -47,15 +48,14 @@ if (length($table_name) <= 0) {
 
 $table_shortname = $table_name;
 $table_shortname =~ s/[A,E,I,O,U,a,e,i,o,u]//g;
-
 if (length($part_name) == 0) {
-    print "ERR: no part name given\n";
+    print "\033[5;31;47mERR\033[0m: no part name given\n";
     help();
     exit(-1);
 }
 
 if (length($comment) == 0) {
-    print "ERR: no comment given\n";
+    print "\033[5;31;47mERR\033[0m: no comment given\n";
     help();
     exit(-1);
 }
@@ -66,13 +66,13 @@ if (length($condition_name) == 0) {
 }
 
 if (length($table_shortname) > 40) {
-    print "ERR: table short name is too long\n";
+    print "\033[5;31;47mERR\033[0m: table short name is too long\n";
     help();
     exit(-2);
 }
 
 if (length(@column) < 1) {
-    print "ERR: you should provide at least one column\n";
+    print "\033[5;31;47mERR\033[0m: you should provide at least one column\n";
     help();
     exit(-3);
 }
@@ -81,7 +81,7 @@ $n = @column;
 $nt = @column_type;
 
 if ($n != $nt) {
-    print "ERR: the number of columns and their types do not match\n";
+    print "\033[5;31;47mERR\033[0m: the number of columns and their types do not match\n";
     help();
     exit(-4);
 }
