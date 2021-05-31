@@ -4,6 +4,7 @@ use Getopt::Long;
 
 my $table_name;
 my $part_name;
+my $comment;
 my $condition_name;
 my $table_shortname;
 my @column;
@@ -12,9 +13,11 @@ my @colum_type;
 $argc = length(@ARGV);
 
 sub help {
-    print "Usage: $0 --name [table_name] --part [part_name] <options>\n";
+    print "Usage: $0 --name [table_name] --part [part_name] --comment [comment] <options>\n";
     print "       Generates the SQL commands to create the table [table_name].\n";
     print "       [table_name]: the name of the table to create\n";
+    print "       [part_name]:  the name of the part to which the condition applies\n";
+    print "       [comment]: a description for this condition\n";
     print "\n";
     print "--condition condition_name: is the name of the condition to generate\n";
     print "            (by default it is the table_name with underscores substituted \n";
@@ -33,10 +36,11 @@ GetOptions("name=s"      => \$table_name,
 	   "part=s"      => \$part_name,
 	   "condition=s" => \$condition_name,
 	   "column=s"    => \@column,
-	   "type=s"      => \@column_type);
+	   "type=s"      => \@column_type,
+           "comment=s"   => \$comment);
 
 if (length($table_name) <= 0) {
-    print "ERR: table name not given\n";
+    print "\033[5;31;47mERR\033[0m: table name not given\n";
     help();
     exit(-1);
 }
@@ -46,6 +50,12 @@ $table_shortname =~ s/[A,E,I,O,U,a,e,i,o,u]//g;
 
 if (length($part_name) == 0) {
     print "ERR: no part name given\n";
+    help();
+    exit(-1);
+}
+
+if (length($comment) == 0) {
+    print "ERR: no comment given\n";
     help();
     exit(-1);
 }
@@ -76,6 +86,12 @@ if ($n != $nt) {
     exit(-4);
 }
 
+print("\n\n\n\/*\n        To be run as CMS_MTD_CORE_COND\n*\/\n\n" .
+      "INSERT INTO CMS_MTD_CORE_COND.KINDS_OF_CONDITIONS " .
+      "(NAME, IS_RECORD_DELETED, EXTENSION_TABLE_NAME, COMMENT_DESCRIPTION) " .
+      "VALUES ('$condition_name', 'F', '$table_name', '$comment');\n"
+    );
+      
 $cmd = "cat btl_conditions_template.sql | sed -e 's/TEMPLATE_NAME/$table_name/g' |" .
     " sed -e 's/TEMPLATE_SHRTNAME/$table_shortname/g' |" .
     " sed -e 's/TEMPLATE_PART_NAME/$part_name/g' |" .
