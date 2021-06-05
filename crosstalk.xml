@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HEADER>
+    <TYPE>
+      <EXTENSION_TABLE_NAME>LY_XTALK</EXTENSION_TABLE_NAME>
+      <NAME>LY XTALK</NAME>
+    </TYPE>
+    <RUN>
+      <RUN_NAME>template_run_name</RUN_NAME>
+      <RUN_TYPE>template_run_type</RUN_TYPE>
+      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>
+      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>
+    </RUN>
+  </HEADER>
+  <DATA_SET>
+    <VERSION>1</VERSION>
+    <PART>
+      <KIND_OF_PART>singleBarCrystal</KIND_OF_PART>
+      <BARCODE>template_barcode</BARCODE>
+    </PART>
+    <DATA>
+      <CTR>template_CTR</CTR>
+      <SIGMA_T>template_SIGMA_T</SIGMA_T>
+      <TEMPERATURE>template_TEMPERATURE</TEMPERATURE>
+      <XTLEFT>template_XTLEFT</XTLEFT>
+      <XTRIGHT>template_XTRIGHT</XTRIGHT>
+      <LY_NORM>template_LY_NORM</LY_NORM>
+    <DATA>
+  </DATA_SET>
+</ROOT>

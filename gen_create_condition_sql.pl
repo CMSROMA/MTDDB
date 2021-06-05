@@ -9,6 +9,7 @@ my $condition_name;
 my $table_shortname;
 my @column;
 my @colum_type;
+my $output = 'condition';
 
 $argc = length(@ARGV);
 
@@ -29,6 +30,7 @@ sub help {
     print "--column    column_name: column name of data to be stored in the table.\n";
     print "            If the column can be NULL, prepend a @ to its name.\n";
     print "--type      column_type: the SQL type of the column in the table.\n";
+    print "--output    output file name (default condition)\n";
     print "\nOptions --column and --type can be repeated as many times\n";
     print "as needed. If type contains ( or ), the type must be given in quotes.\n";
 }
@@ -38,7 +40,11 @@ GetOptions("name=s"      => \$table_name,
 	   "condition=s" => \$condition_name,
 	   "column=s"    => \@column,
 	   "type=s"      => \@column_type,
-           "comment=s"   => \$comment);
+           "comment=s"   => \$comment,
+           "output=s"    => \$output);
+
+open SQL, ">$output.sql";
+open XML, ">$output.xml";
 
 if (length($table_name) <= 0) {
     print "\033[5;31;47mERR\033[0m: table name not given\n";
@@ -86,11 +92,33 @@ if ($n != $nt) {
     exit(-4);
 }
 
-print("\n\n\n\/*\n        To be run as CMS_MTD_CORE_COND\n*\/\n\n" .
-      "INSERT INTO CMS_MTD_CORE_COND.KINDS_OF_CONDITIONS " .
-      "(NAME, IS_RECORD_DELETED, EXTENSION_TABLE_NAME, COMMENT_DESCRIPTION) " .
-      "VALUES ('$condition_name', 'F', '$table_name', '$comment');\n"
-    );
+print "Generating $output.sql and $output.xml\n";
+
+print XML "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
+print XML "<ROOT xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n";
+print XML "  <HEADER>\n";
+print XML "    <TYPE>\n";
+print XML "      <EXTENSION_TABLE_NAME>$table_name</EXTENSION_TABLE_NAME>\n";
+print XML "      <NAME>$condition_name</NAME>\n";
+print XML "    </TYPE>\n";
+print XML "    <RUN>\n";
+print XML "      <RUN_NAME>template_run_name</RUN_NAME>\n";
+print XML "      <RUN_TYPE>template_run_type</RUN_TYPE>\n";
+print XML "      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>\n";
+print XML "      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>\n";
+print XML "    </RUN>\n";
+print XML "  </HEADER>\n";
+print XML "  <DATA_SET>\n";
+print XML "    <VERSION>1</VERSION>\n";
+print XML "    <PART>\n";
+print XML "      <KIND_OF_PART>$part_name</KIND_OF_PART>\n";
+print XML "      <BARCODE>template_barcode</BARCODE>\n";
+print XML "    </PART>\n";
+
+print SQL "\n\n\n\/*\n        To be run as CMS_MTD_CORE_COND\n*\/\n\n" .
+    "INSERT INTO CMS_MTD_CORE_COND.KINDS_OF_CONDITIONS " .
+    "(NAME, IS_RECORD_DELETED, EXTENSION_TABLE_NAME, COMMENT_DESCRIPTION) " .
+    "VALUES ('$condition_name', 'F', '$table_name', '$comment');\n";
       
 $cmd = "cat btl_conditions_template.sql | sed -e 's/TEMPLATE_NAME/$table_name/g' |" .
     " sed -e 's/TEMPLATE_SHRTNAME/$table_shortname/g' |" .
@@ -118,21 +146,33 @@ sub insertCols {
 	    $opt = "";
 	}
 	my $typ = $column_type[$i];
-	print "  $col\t$typ\t$opt";
+	print SQL "  $col\t$typ\t$opt";
+	print XML "      <$col>template_$col</$col>\n";
 	if ($i < $n - 1) {
-	    print ",";
+	    print SQL ",";
 	}
-	print "\n";
+	print SQL "\n";
     }
 }
 
+print XML "    <DATA>\n";
+
 foreach $l (@buffer) {
     if ($l !~ m/TEMPLATE_COLUMNS/) {
-	print $l;
+	print SQL $l;
     } else {
 	insertCols($n, \@column, \@column_type);
     }
 }
 
+print XML "    <DATA>\n";
+print XML "  </DATA_SET>\n";
+print XML "</ROOT>\n";
+
+close XML;
+close SQL;
+
 unlink 'gen_create_condition_sql.sql';
+
+exit 0;
 

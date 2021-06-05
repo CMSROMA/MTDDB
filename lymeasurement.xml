@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HEADER>
+    <TYPE>
+      <EXTENSION_TABLE_NAME>LY_MEASUREMENT</EXTENSION_TABLE_NAME>
+      <NAME>LY MEASUREMENT</NAME>
+    </TYPE>
+    <RUN>
+      <RUN_NAME>template_run_name</RUN_NAME>
+      <RUN_TYPE>template_run_type</RUN_TYPE>
+      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>
+      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>
+    </RUN>
+  </HEADER>
+  <DATA_SET>
+    <VERSION>1</VERSION>
+    <PART>
+      <KIND_OF_PART>singleBarCrystal</KIND_OF_PART>
+      <BARCODE>template_barcode</BARCODE>
+    </PART>
+    <DATA>
+      <B_RMS>template_B_RMS</B_RMS>
+      <B_3S_ASYM>template_B_3S_ASYM</B_3S_ASYM>
+      <B_2S_ASYM>template_B_2S_ASYM</B_2S_ASYM>
+      <LY_ABS>template_LY_ABS</LY_ABS>
+      <LY_NORM>template_LY_NORM</LY_NORM>
+      <DECAY_TIME>template_DECAY_TIME</DECAY_TIME>
+    <DATA>
+  </DATA_SET>
+</ROOT>
