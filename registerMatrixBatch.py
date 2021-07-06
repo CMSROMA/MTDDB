@@ -188,7 +188,8 @@ if csvfile != None:
                                         serial = serialNumber)
         
     fxml.write(mtdcdb.mtdxml(myroot))
-    fxmlcond.write(mtdcdb.mtdxml(condXml))
+    if condXml != None:
+        fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 elif barcode != '':
     try:
@@ -203,7 +204,8 @@ elif barcode != '':
         myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
         bc += 1
     fxml.write(mtdcdb.mtdxml(myroot))
-    fxmlcond.write(mtdcdb.mtdxml(condXml))
+    if condXml != None:
+        fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 fxml.close()
 fxmlcond.close()

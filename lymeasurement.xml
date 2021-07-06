@@ -25,6 +25,6 @@
       <LY_ABS>template_LY_ABS</LY_ABS>
       <LY_NORM>template_LY_NORM</LY_NORM>
       <DECAY_TIME>template_DECAY_TIME</DECAY_TIME>
-    <DATA>
+    </DATA>
   </DATA_SET>
 </ROOT>
