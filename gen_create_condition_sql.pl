@@ -155,7 +155,7 @@ sub insertCols {
     }
 }
 
-print XML "    </DATA>\n";
+print XML "    <DATA>\n";
 
 foreach $l (@buffer) {
     if ($l !~ m/TEMPLATE_COLUMNS/) {
@@ -165,7 +165,7 @@ foreach $l (@buffer) {
     }
 }
 
-print XML "    <DATA>\n";
+print XML "    </DATA>\n";
 print XML "  </DATA_SET>\n";
 print XML "</ROOT>\n";
 
