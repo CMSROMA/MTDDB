@@ -19,7 +19,8 @@
       <BARCODE>template_barcode</BARCODE>
     </PART>
     <DATA>
-      <TYPE>template_TYPE</TYPE>
+      <TYPE>template_TYPE</TYPE><!-- allowed types: G, N, P, E -->
+                                <!-- corresponding to gamma, neutron, proton, electron -->
       <DOSERATE>template_DOSERATE</DOSERATE>
       <DOSE>template_DOSE</DOSE>
     </DATA>
