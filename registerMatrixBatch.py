@@ -19,7 +19,7 @@ PRODUCER_MAX = 12
 
 shrtOpts = 'hb:x:p:t:l:f:o:n:wu:'
 longOpts = ['help', 'batch=', 'barcode=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=', 'write', 'user']
+            'n=', 'write', 'user=']
 helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'specify the barcode of the matrix',
             'specify the producer index [0 < index < {}]'.format(PRODUCER_MAX),
@@ -179,6 +179,11 @@ if csvfile != None:
             serialNumber = str(row['serialnumber']).strip()
             if len(serialNumber) == 0 or serialNumber == 'nan':
                 serialNumber = None
+            if serialNumber != None and len(serialNumber) > 40:
+                l = len(serialNumber)
+                print(f'Serial number {serialNumber} for part {barcode} too long')
+                print(f'       the maximum allowed length is 40; it is {l}...exiting...')
+                exit(-1)
         print(f'Registering matrix {barcode} of type {partType} made by producer {producer}', end = '')
         if serialNumber != None:
             print(f' (serial #: {serialNumber})')
@@ -211,7 +216,9 @@ fxml.close()
 fxmlcond.close()
 
 if write:
+    print('Transferring XML to the dbloader...', end = '')
     mtdcdb.writeToDB(filename = xmlfile, user = username)
+    print('done')
 
 exit(0)
 
