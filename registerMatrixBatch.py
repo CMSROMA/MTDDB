@@ -184,9 +184,9 @@ if csvfile != None:
             print(f' (serial #: {serialNumber})')
         else:
             print()
-        myroot = mtdcdb.mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory,
-                                        serial = serialNumber)
-        
+        matrixxml = mtdcdb.mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory,
+                                           serial = serialNumber)
+
     fxml.write(mtdcdb.mtdxml(myroot))
     if condXml != None:
         fxmlcond.write(mtdcdb.mtdxml(condXml))
