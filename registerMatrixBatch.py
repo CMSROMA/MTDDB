@@ -187,9 +187,10 @@ if csvfile != None:
             comment = ''
         if pdata == "nan":
             pdata = ''
-        mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma',
-                                          batch = batchIngot, pdata = pdata,
-                                          description = 'preproduction crystals: these comments were added after actual registration')
+        if len(comment) > 0 or len(pdata) > 0:
+            mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma', pdata = pdata,
+                                              description = 'preproduction crystals: these comments were added ' +
+                                              'after actual registration')
         serialNumber = None
         if 'serialnumber' in matrices.columns:
             serialNumber = str(row['serialnumber']).strip()
@@ -227,8 +228,7 @@ elif barcode != '':
     fxml.write(mtdcdb.mtdxml(myroot))
     if condXml == None:
         condXml = mtdcdb.root()
-        mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma', pdata = pdata,
-                                          batch = batchIngot)
+        mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma', pdata = pdata)
         fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 fxml.close()

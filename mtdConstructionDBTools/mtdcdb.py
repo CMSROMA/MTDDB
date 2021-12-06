@@ -15,7 +15,7 @@ def attribute(parent, name, value):
     value = etree.SubElement(attribute, "VALUE").text = str(value)
     return attribute
     
-def part(barcode, kind_of_part, attributes = None, manufacturer = None, user = None,
+def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = None, user = None,
          location = 'testLab', serial = None):
     part = etree.Element("PART", mode = "auto")
     kind_of_part = etree.SubElement(part, "KIND_OF_PART").text = kind_of_part
@@ -26,6 +26,8 @@ def part(barcode, kind_of_part, attributes = None, manufacturer = None, user = N
         user = getpass.getuser()
     record_insertion = etree.SubElement(part, "RECORD_INSERTION_USER").text = user
     location = etree.SubElement(part, "LOCATION").text = location
+    if batch != None and len(batch) > 0:
+        batchIngot = etree.SubElement(part, "BATCH_NUMBER").text = str(batch)
     if manufacturer != None:
         manufacturer = etree.SubElement(part, "MANUFACTURER").text = 'Producer_' + str(manufacturer)
     predefined_attributes = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
@@ -38,18 +40,6 @@ def root():
     root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
     return root
 
-# probably we can avoid it
-def mtdcreateBatch(parts, batchIngot, user = None):
-    # for the time being no attrs are foreseen
-    attrs = None
-
-    # create the batch/ingot pair (the father)
-    if user == None:
-        user = getpass.getuser()
-    bi = part(str(batchIngot), 'Batch/Ingot', attributes = attrs, user = user)
-    parts.append(bi)
-#--------------------------
-
 def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laboratory,
                     serial = 'None', user = None):
     # build the list of the attributes, if any
@@ -61,8 +51,8 @@ def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laborato
 
     # create the matrix part (a child of the batch)
     LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
-    matrixxml = part(barcode, LYSOMatrixtype, attributes = attrs, user = user, location = laboratory,
-                     manufacturer = manufacturer, serial = serial)
+    matrixxml = part(barcode, LYSOMatrixtype, batch = batchIngot, attributes = attrs, user = user,
+                     location = laboratory, manufacturer = manufacturer, serial = serial)
 
     # create the single crystals as children of the matrix
     singlextal = etree.SubElement(matrixxml, "CHILDREN")
