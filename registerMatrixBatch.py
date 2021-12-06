@@ -17,9 +17,9 @@ from mtdConstructionDBTools import mtdcdb
 
 PRODUCER_MAX = 12
 
-shrtOpts = 'hb:x:p:t:l:f:o:n:wu:d:c:'
+shrtOpts = 'hb:x:p:t:l:f:o:n:wu:d:c:s'
 longOpts = ['help', 'batch=', 'barcode=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=', 'write', 'user=', 'data=', 'comment=']
+            'n=', 'write', 'user=', 'data=', 'comment=', 'single']
 helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'specify the barcode of the matrix',
             'specify the producer index [0 < index < {}]'.format(PRODUCER_MAX),
@@ -35,7 +35,8 @@ helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'upload the XML file automatically at the end of the processing (requires --file)',
             'the CERN username authorised to permanently write data to DB (default to current username)',
             'producer provided data to be associated to the part',
-            'operator comments']
+            'operator comments',
+            'register single crystals']
 
 hlp = ('Generates the XML file needed to register one or more LYSO matrices.\n' 
        'If you provide a CSV file name, all the matrices included in the file\n' 
@@ -63,6 +64,7 @@ write = False
 username = None
 comment = ''
 pdata = ''
+multiplicity = 16
 
 errors = 0
 
@@ -109,6 +111,8 @@ for o, a in opts:
         pdata = a
     elif o in ('-c', '--comment'):
         comment = a
+    elif o in ('s', '--single'):
+        multiplicity = 0
     else:
         assert False, 'unhandled option'
 
@@ -172,8 +176,6 @@ if csvfile != None:
 
     print(matrices)
 
-#    bi = mtdcdb.mtdcreateBatch(parts, batchIngot, user = username)    
-
     for index, row in matrices.iterrows():    
         Xtaltype = xtaltype[row['t(mm)']].strip()
         partType = f'LYSOMatrix #{Xtaltype}'
@@ -207,7 +209,7 @@ if csvfile != None:
         else:
             print()
         matrixxml = mtdcdb.mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory,
-                                           serial = serialNumber, user = username)
+                                           serial = serialNumber, user = username, multiplicity = multiplicity)
 
     fxml.write(mtdcdb.mtdxml(myroot))
     if condXml != None:

@@ -41,7 +41,7 @@ def root():
     return root
 
 def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laboratory,
-                    serial = 'None', user = None):
+                    serial = 'None', user = None, multiplicity = 16):
     # build the list of the attributes, if any
     attrs = []
     attr = {}
@@ -49,15 +49,18 @@ def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laborato
     # for the time being no attrs are foreseen
     attrs = None
 
-    # create the matrix part (a child of the batch)
+    # create the matrix part 
     LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
+    if multiplicity == 1:
+        LYSOMatrixtype = 'singleBarCrystal'
     matrixxml = part(barcode, LYSOMatrixtype, batch = batchIngot, attributes = attrs, user = user,
                      location = laboratory, manufacturer = manufacturer, serial = serial)
 
     # create the single crystals as children of the matrix
-    singlextal = etree.SubElement(matrixxml, "CHILDREN")
+    if multiplicity > 0:
+        singlextal = etree.SubElement(matrixxml, "CHILDREN")
     xtal = ''
-    for i in range(16):
+    for i in range(multiplicity):
         cbarcode = barcode + '-' + str(i)
         xtal = part(cbarcode, 'singleBarCrystal', attributes = [], user = user, location = laboratory)
         singlextal.append(xtal)
