@@ -11,6 +11,8 @@ my @column;
 my @colum_type;
 my $output = 'condition';
 
+my @parts;
+
 $argc = length(@ARGV);
 
 sub help {
@@ -31,12 +33,13 @@ sub help {
     print "            If the column can be NULL, prepend a @ to its name.\n";
     print "--type      column_type: the SQL type of the column in the table.\n";
     print "--output    output file name (default condition)\n";
-    print "\nOptions --column and --type can be repeated as many times\n";
+    print "\nOptions --part, --column and --type can be repeated as many times\n";
     print "as needed. If type contains ( or ), the type must be given in quotes.\n";
 }
 
 GetOptions("name=s"      => \$table_name,
-	   "part=s"      => \$part_name,
+	   #	   "part=s"      => \$part_name,
+	   "part=s"      => \@parts,
 	   "condition=s" => \$condition_name,
 	   "column=s"    => \@column,
 	   "type=s"      => \@column_type,
@@ -54,7 +57,7 @@ if (length($table_name) <= 0) {
 
 $table_shortname = $table_name;
 $table_shortname =~ s/[A,E,I,O,U,a,e,i,o,u]//g;
-if (length($part_name) == 0) {
+if (length($parts[0]) == 0) {
     print "\033[5;31;47mERR\033[0m: no part name given\n";
     help();
     exit(-1);
@@ -94,6 +97,8 @@ if ($n != $nt) {
 
 print "Generating $output.sql and $output.xml\n";
 
+$part_name = @parts[0];
+
 print XML "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
 print XML "<ROOT xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n";
 print XML "  <HEADER>\n";
@@ -119,7 +124,7 @@ print SQL "\n\n\n\/*\n        To be run as CMS_MTD_CORE_COND\n*\/\n\n" .
     "INSERT INTO CMS_MTD_CORE_COND.KINDS_OF_CONDITIONS " .
     "(NAME, IS_RECORD_DELETED, EXTENSION_TABLE_NAME, COMMENT_DESCRIPTION) " .
     "VALUES ('$condition_name', 'F', '$table_name', '$comment');\n";
-      
+
 $cmd = "cat btl_conditions_template.sql | sed -e 's/TEMPLATE_NAME/$table_name/g' |" .
     " sed -e 's/TEMPLATE_SHRTNAME/$table_shortname/g' |" .
     " sed -e 's/TEMPLATE_PART_NAME/$part_name/g' |" .
@@ -164,6 +169,18 @@ foreach $l (@buffer) {
 	insertCols($n, \@column, \@column_type);
     }
 }
+
+print SQL "\n";
+foreach $p (@parts) {
+    print SQL "INSERT INTO CMS_MTD_CORE_COND.COND_TO_PART_RLTNSHPS\n" .
+	"  (KIND_OF_PART_ID, KIND_OF_CONDITION_ID, DISPLAY_NAME, IS_RECORD_DELETED)\n" .
+	"  VALUES ((SELECT KIND_OF_PART_ID FROM CMS_MTD_CORE_CONSTRUCT.KINDS_OF_PARTS WHERE\n" .
+	"           DISPLAY_NAME = '$p' AND IS_RECORD_DELETED = 'F'),\n" .
+	"           (SELECT KIND_OF_CONDITION_ID FROM\n" .
+	"           CMS_MTD_CORE_COND.KINDS_OF_CONDITIONS WHERE EXTENSION_TABLE_NAME = '$table_name' AND \n" .
+	"           NAME = '$condition_name'), '$comment for $p', 'F'); \n";
+}
+
 
 print XML "    </DATA>\n";
 print XML "  </DATA_SET>\n";

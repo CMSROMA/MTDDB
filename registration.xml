@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HEADER>
+    <TYPE>
+      <EXTENSION_TABLE_NAME>XTALREGISTRATION</EXTENSION_TABLE_NAME>
+      <NAME>XTALREGISTRATION</NAME>
+    </TYPE>
+    <RUN>
+      <RUN_NAME>template_run_name</RUN_NAME>
+      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>
+      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>
+    </RUN>
+  </HEADER>
+  <DATA_SET>
+    <VERSION>1</VERSION>
+    <PART>
+      <KIND_OF_PART>template_part_name</KIND_OF_PART>
+      <BARCODE>template_barcode</BARCODE>
+    </PART>
+    <DATA>
+      <BATCH_INGOT>template_BATCH_INGOT</BATCH_INGOT>
+      <BATCH_INGOT_DATA>template_BATCH_INGOT_DATA</BATCH_INGOT_DATA>
+      <OPERATORCOMMENT>template_OPERATORCOMMENT</OPERATORCOMMENT>
+    </DATA>
+  </DATA_SET>
+</ROOT>

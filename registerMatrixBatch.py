@@ -17,9 +17,9 @@ from mtdConstructionDBTools import mtdcdb
 
 PRODUCER_MAX = 12
 
-shrtOpts = 'hb:x:p:t:l:f:o:n:wu:'
+shrtOpts = 'hb:x:p:t:l:f:o:n:wu:d:c:'
 longOpts = ['help', 'batch=', 'barcode=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=', 'write', 'user=']
+            'n=', 'write', 'user=', 'data=', 'comment=']
 helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'specify the barcode of the matrix',
             'specify the producer index [0 < index < {}]'.format(PRODUCER_MAX),
@@ -33,7 +33,9 @@ helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'the filename of the XML output file',
             'the number of barcodes to generate',
             'upload the XML file automatically at the end of the processing (requires --file)',
-            'the CERN username authorised to permanently write data to DB (default to current username)']
+            'the CERN username authorised to permanently write data to DB (default to current username)',
+            'producer provided data to be associated to the part',
+            'operator comments']
 
 hlp = ('Generates the XML file needed to register one or more LYSO matrices.\n' 
        'If you provide a CSV file name, all the matrices included in the file\n' 
@@ -58,6 +60,9 @@ laboratory = 'Roma'
 xmlfile = sys.argv[0].replace('.py', '.xml')
 nbarcodes = 1
 write = False
+username = None
+comment = ''
+pdata = ''
 
 errors = 0
 
@@ -100,6 +105,10 @@ for o, a in opts:
         write = True
     elif o in ('-u', '--user'):
         username = a
+    elif o in ('-d', '--data'):
+        pdata = a
+    elif o in ('-c', '--comment'):
+        comment = a
     else:
         assert False, 'unhandled option'
 
@@ -142,7 +151,7 @@ xtaltype = {
 
 # check if output file exists
 if os.path.exists(xmlfile):
-    print('XML file already exists. Please rename or remove it before proceeding')
+    print(f'XML {xmlfile} file already exists. Please rename or remove it before proceeding')
     exit(-1)
     
 fxml = open(xmlfile, "w")
@@ -163,17 +172,24 @@ if csvfile != None:
 
     print(matrices)
 
+#    bi = mtdcdb.mtdcreateBatch(parts, batchIngot, user = username)    
+
     for index, row in matrices.iterrows():    
         Xtaltype = xtaltype[row['t(mm)']].strip()
         partType = f'LYSOMatrix #{Xtaltype}'
         barcode = 'PRE{:010d}'.format(int(row['barcode']))
         producer = row['producer']
-        comment = row['comments']
-        if type(comment) is str and len(comment) > 0:
-            if condXml == None:
-                condXml = mtdcdb.root()
-            mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma',
-                                              description = 'preproduction crystals: these comments were added after actual registration')
+        comment = str(row['comments'])
+        pdata = str(row['pdata'])
+        if condXml == None:
+            condXml = mtdcdb.root()
+        if comment == "nan":
+            comment = ''
+        if pdata == "nan":
+            pdata = ''
+        mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma',
+                                          batch = batchIngot, pdata = pdata,
+                                          description = 'preproduction crystals: these comments were added after actual registration')
         serialNumber = None
         if 'serialnumber' in matrices.columns:
             serialNumber = str(row['serialnumber']).strip()
@@ -190,7 +206,7 @@ if csvfile != None:
         else:
             print()
         matrixxml = mtdcdb.mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory,
-                                           serial = serialNumber)
+                                           serial = serialNumber, user = username)
 
     fxml.write(mtdcdb.mtdxml(myroot))
     if condXml != None:
@@ -209,7 +225,10 @@ elif barcode != '':
         myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
         bc += 1
     fxml.write(mtdcdb.mtdxml(myroot))
-    if condXml != None:
+    if condXml == None:
+        condXml = mtdcdb.root()
+        mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma', pdata = pdata,
+                                          batch = batchIngot)
         fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 fxml.close()

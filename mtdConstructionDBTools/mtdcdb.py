@@ -1,4 +1,5 @@
 from lxml import etree
+import lxml.objectify
 import sys
 import os
 import getpass
@@ -6,6 +7,7 @@ import subprocess
 import re
 import time
 from datetime import datetime
+import math
 
 def attribute(parent, name, value):
     attribute = etree.SubElement(parent, "ATTRIBUTE")
@@ -13,13 +15,15 @@ def attribute(parent, name, value):
     value = etree.SubElement(attribute, "VALUE").text = str(value)
     return attribute
     
-def part(barcode, kind_of_part, attributes = None, manufacturer = None, user = 'organtin',
+def part(barcode, kind_of_part, attributes = None, manufacturer = None, user = None,
          location = 'testLab', serial = None):
     part = etree.Element("PART", mode = "auto")
     kind_of_part = etree.SubElement(part, "KIND_OF_PART").text = kind_of_part
     barcode = etree.SubElement(part, "BARCODE").text = barcode
     if serial != None:
         serial = etree.SubElement(part, "SERIAL_NUMBER").text = serial
+    if user == None:
+        user = getpass.getuser()
     record_insertion = etree.SubElement(part, "RECORD_INSERTION_USER").text = user
     location = etree.SubElement(part, "LOCATION").text = location
     if manufacturer != None:
@@ -34,7 +38,20 @@ def root():
     root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
     return root
 
-def mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory, serial = 'None'):
+# probably we can avoid it
+def mtdcreateBatch(parts, batchIngot, user = None):
+    # for the time being no attrs are foreseen
+    attrs = None
+
+    # create the batch/ingot pair (the father)
+    if user == None:
+        user = getpass.getuser()
+    bi = part(str(batchIngot), 'Batch/Ingot', attributes = attrs, user = user)
+    parts.append(bi)
+#--------------------------
+
+def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laboratory,
+                    serial = 'None', user = None):
     # build the list of the attributes, if any
     attrs = []
     attr = {}
@@ -42,29 +59,21 @@ def mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory, 
     # for the time being no attrs are foreseen
     attrs = None
 
-    # create the batch/ingot pair (the father)
-    bi = part(str(batchIngot), 'Batch/Ingot', attrs, user = getpass.getuser(), location = laboratory)
-    attrs = []
-
     # create the matrix part (a child of the batch)
-    matrix = etree.SubElement(bi, "CHILDREN")
     LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
-    matrixxml = part(barcode, LYSOMatrixtype, attrs, user = getpass.getuser(), location = laboratory,
-                     manufacturer = producer, serial = serial)
-
-    # append the child to the father
-    matrix.append(matrixxml)
+    matrixxml = part(barcode, LYSOMatrixtype, attributes = attrs, user = user, location = laboratory,
+                     manufacturer = manufacturer, serial = serial)
 
     # create the single crystals as children of the matrix
     singlextal = etree.SubElement(matrixxml, "CHILDREN")
     xtal = ''
     for i in range(16):
         cbarcode = barcode + '-' + str(i)
-        xtal = part(cbarcode, 'singleBarCrystal', [], user = getpass.getuser(), location = laboratory)
+        xtal = part(cbarcode, 'singleBarCrystal', attributes = [], user = user, location = laboratory)
         singlextal.append(xtal)
 
     # append the father to the root node
-    parts.append(bi)
+    parts.append(matrixxml)
     return parts
 
 def mtdxml(root):
@@ -113,7 +122,8 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             user = getpass.getuser()
         if not dryrun:
             subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
-                            filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' + filename])
+                            filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' +
+                            filename])
         for i in range(10, 0, -1):
             sys.stdout.write('File uploaded...waiting for completion...' + str(i)+'    \r')
             sys.stdout.flush()
@@ -152,7 +162,8 @@ def addDataSet(parent, barcode, dataset):
     data = etree.SubElement(parent, "DATA")
     for d in dataset:
         name = d['name']
-        etree.SubElement(data, name).text = d['value']
+        if d['value']:
+            etree.SubElement(data, name).text = d['value']
         
 def condition(cmntroot, barcode, condition_name, condition_dataset, run = None, location = None,
               comment = None):
@@ -180,9 +191,13 @@ def condition(cmntroot, barcode, condition_name, condition_dataset, run = None, 
     dataset = etree.SubElement(cmntroot, "DATA_SET")
     addDataSet(dataset, barcode, condition_dataset)
 
-def addVisualInspectionComment(cmntroot, barcode, comment, location = None, description = None):
+def addVisualInspectionComment(cmntroot, barcode, comment = '', location = None, description = None,
+                               pdata = None, batch = ''):
     aComment = condition(cmntroot, barcode,
-                         'LYSOMATRIX VISUALINSPECTION', [{"name": "OPERATOR_COMMENT",
-                                                          "value": comment}],
-                         run = 'Visual Inspection', location = location, comment = description)
-    
+                         'XTALREGISTRATION', [{"name": "OPERATORCOMMENT",
+                                               "value": comment},
+                                              {"name": "BATCH_INGOT",
+                                               "value": batch},
+                                              {"name": "BATCH_INGOT_DATA",
+                                               "value": pdata}],
+                         run = 'VISUAL_INSPECTION', location = location, comment = description)
