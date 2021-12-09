@@ -9,72 +9,10 @@ import time
 from datetime import datetime
 import math
 
-def attribute(parent, name, value):
-    attribute = etree.SubElement(parent, "ATTRIBUTE")
-    name = etree.SubElement(attribute, "NAME").text = str(name)
-    value = etree.SubElement(attribute, "VALUE").text = str(value)
-    return attribute
-    
-def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = None, user = None,
-         location = 'testLab', serial = None):
-    part = etree.Element("PART", mode = "auto")
-    kind_of_part = etree.SubElement(part, "KIND_OF_PART").text = kind_of_part
-    barcode = etree.SubElement(part, "BARCODE").text = barcode
-    if serial != None:
-        serial = etree.SubElement(part, "SERIAL_NUMBER").text = serial
-    if user == None:
-        user = getpass.getuser()
-    record_insertion = etree.SubElement(part, "RECORD_INSERTION_USER").text = user
-    location = etree.SubElement(part, "LOCATION").text = location
-    if batch != None and len(batch) > 0:
-        batchIngot = etree.SubElement(part, "BATCH_NUMBER").text = str(batch)
-    if manufacturer != None:
-        manufacturer = etree.SubElement(part, "MANUFACTURER").text = 'Producer_' + str(manufacturer)
-    predefined_attributes = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
-    if attributes != None:
-        for attr in attributes:
-            attribute(predefined_attributes, attr['NAME'], attr['VALUE'])
-    return part
-
-def root():
-    root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
-    return root
-
-def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laboratory,
-                    serial = 'None', user = None, multiplicity = 16):
-    # build the list of the attributes, if any
-    attrs = []
-    attr = {}
-    attrs.append(attr)
-    # for the time being no attrs are foreseen
-    attrs = None
-
-    # create the matrix part 
-    LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
-    if multiplicity == 1:
-        LYSOMatrixtype = 'singleBarCrystal'
-    matrixxml = part(barcode, LYSOMatrixtype, batch = batchIngot, attributes = attrs, user = user,
-                     location = laboratory, manufacturer = manufacturer, serial = serial)
-
-    # create the single crystals as children of the matrix
-    if multiplicity > 0:
-        singlextal = etree.SubElement(matrixxml, "CHILDREN")
-    xtal = ''
-    for i in range(multiplicity):
-        cbarcode = barcode + '-' + str(i)
-        xtal = part(cbarcode, 'singleBarCrystal', attributes = [], user = user, location = laboratory)
-        singlextal.append(xtal)
-
-    # append the father to the root node
-    parts.append(matrixxml)
-    return parts
-
-def mtdxml(root):
-    # print xml
-    return etree.tostring(root, encoding='UTF-8', standalone = 'yes', xml_declaration=True,
-                          pretty_print=True).decode("utf-8")
-
-def mtdhelp(shrtOpts, longOpts, helpOpts, err = 0, hlp = ''):
+'''
+general services
+'''
+def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     print(f'Usage: {sys.argv[0]} [options]')
     if len(hlp) > 0:
         hlp = hlp.split('\n')
@@ -86,28 +24,6 @@ def mtdhelp(shrtOpts, longOpts, helpOpts, err = 0, hlp = ''):
     for i in range(len(shrtOpts)):
         print('       ' + shrtOpts[i] + ' ('+ longOpts[i] + '): ' + helpOpts[i])
     exit(err)
-
-def newrun(name, comment = None, user = None, begin = None, location = None, runtype = None,
-        runnumber = None):
-    if begin == None:
-        now = datetime.now()
-        begin = now.strftime("%Y-%m-$d %H:%M:%S")
-    return 0
-
-
-def finishrun(run_id, user = None, time = None, comment = None, end = None): 
-    if end == None:
-        now = datetime.now()
-        begin = now.strftime("%Y-%m-$d %H:%M:%S")
-    return 0
-
-'''
-def newcondition(part_id, run_id, kind_of_condition, user = None, comment = None):
-    return 0
-
-def visualInspectionComment(part_id, comment, user = None, time = None, location = 'Roma'):
-    return 0
-'''
 
 def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False, user = None):
     if filename != 'registerMatrixBatch.xml':
@@ -149,6 +65,126 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
     else:
         print('*** ERR *** xml filename is mandatory. Cannot use the default one')
 
+'''
+create generic XML elements to register parts in the db
+'''
+def root():
+    root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
+    return root
+
+def mtdxml(root):
+    # print xml
+    return etree.tostring(root, encoding='UTF-8', standalone = 'yes', xml_declaration=True,
+                          pretty_print=True).decode("utf-8")
+
+def attribute(parent, name, value):
+    attribute = etree.SubElement(parent, "ATTRIBUTE")
+    name = etree.SubElement(attribute, "NAME").text = str(name)
+    value = etree.SubElement(attribute, "VALUE").text = str(value)
+    return attribute
+    
+def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = None, user = None,
+         location = 'testLab', serial = None):
+    part = etree.Element("PART", mode = "auto")
+    kind_of_part = etree.SubElement(part, "KIND_OF_PART").text = kind_of_part
+    barcode = etree.SubElement(part, "BARCODE").text = barcode
+    if serial != None:
+        serial = etree.SubElement(part, "SERIAL_NUMBER").text = serial
+    if user == None:
+        user = getpass.getuser()
+    record_insertion = etree.SubElement(part, "RECORD_INSERTION_USER").text = user
+    location = etree.SubElement(part, "LOCATION").text = location
+    if batch != None and len(batch) > 0:
+        batchIngot = etree.SubElement(part, "BATCH_NUMBER").text = str(batch)
+    if manufacturer != None:
+        manufacturer = etree.SubElement(part, "MANUFACTURER").text = 'Producer_' + str(manufacturer)
+    predefined_attributes = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
+    if attributes != None:
+        for attr in attributes:
+            attribute(predefined_attributes, attr['NAME'], attr['VALUE'])
+    return part
+
+'''
+helpers to create specific parts 
+'''
+def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laboratory,
+                    serial = 'None', user = None, multiplicity = 16):
+    # build the list of the attributes, if any
+    attrs = []
+    attr = {}
+    attrs.append(attr)
+    # for the time being no attrs are foreseen
+    attrs = None
+
+    # create the matrix part 
+    LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
+    if multiplicity == 1:
+        LYSOMatrixtype = 'singleBarCrystal'
+    matrixxml = part(barcode, LYSOMatrixtype, batch = batchIngot, attributes = attrs, user = user,
+                     location = laboratory, manufacturer = manufacturer, serial = serial)
+
+    # create the single crystals as children of the matrix
+    if multiplicity > 0:
+        singlextal = etree.SubElement(matrixxml, "CHILDREN")
+    xtal = ''
+    for i in range(multiplicity):
+        cbarcode = barcode + '-' + str(i)
+        xtal = part(cbarcode, 'singleBarCrystal', attributes = [], user = user, location = laboratory)
+        singlextal.append(xtal)
+
+    # append the father to the root node
+    parts.append(matrixxml)
+    return parts
+
+'''
+helpers to create conditions
+'''
+def newCondition(cmntroot, barcode, condition_name, condition_dataset, run = None, location = None,
+                 comment = None, runBegin = None, runEnd = None):
+    if run == None:
+        print('*** WARNING *** : conditions given, but no run details provided.')
+        return
+    cond = etree.SubElement(cmntroot, "HEADER")
+    cond_type = etree.SubElement(cond, "TYPE")
+    etree.SubElement(cond_type, "NAME").text = condition_name
+    etree.SubElement(cond_type, "EXTENSION_TABLE_NAME").text = condition_name.replace(' ', '_')
+    runElem = newrun(cond, run, begin = runBegin, end = runEnd)
+    cond.append(runElem)
+    dataset = etree.SubElement(cond, "DATA_SET")
+    addDataSet(dataset, barcode, condition_dataset)
+    return cond
+
+def newrun(condition, run, comment = None, user = None, begin = None, location = None, runtype = None,
+           runnumber = None, end = None):
+    runElem = etree.SubElement(condition, "RUN")
+    if begin == None:
+        now = datetime.now()
+        begin = now.strftime("%Y-%m-%d %H:%M:%S")
+    if end == None:
+        end = begin
+    if type(run) is str:
+        etree.SubElement(runElem, "RUN_NAME").text = run
+    else:
+        etree.SubElement(runElem, "RUN_TYPE").text = run['type']
+        etree.SubElement(runElem, "RUN_NUMBER").text = run['number']
+    etree.SubElement(runElem, "RUN_BEGIN_TIMESTAMP").text = begin
+    etree.SubElement(runElem, "RUN_END_TIMESTAMP").text = end
+    return runElem
+
+'''
+def finishrun(run_id, user = None, time = None, comment = None, end = None): 
+    if end == None:
+        now = datetime.now()
+        begin = now.strftime("%Y-%m-$d %H:%M:%S")
+    return 0
+
+def newcondition(part_id, run_id, kind_of_condition, user = None, comment = None):
+    return 0
+
+def visualInspectionComment(part_id, comment, user = None, time = None, location = 'Roma'):
+    return 0
+'''
+
 def addDataSet(parent, barcode, dataset):
     part = etree.SubElement(parent, "PART")
     etree.SubElement(part, "BARCODE").text = barcode
@@ -184,6 +220,9 @@ def condition(cmntroot, barcode, condition_name, condition_dataset, run = None, 
     dataset = etree.SubElement(cmntroot, "DATA_SET")
     addDataSet(dataset, barcode, condition_dataset)
 
+'''
+helpers to create specific conditions
+'''
 def addVisualInspectionComment(cmntroot, barcode, comment = '', location = None, description = None,
                                pdata = None, batch = ''):
     aComment = condition(cmntroot, barcode,
