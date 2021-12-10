@@ -45,11 +45,14 @@ xmlstring = mtdcdb.mtdxml(xml)
 
 print(xmlstring)
 
-dataset = [{'name': 'name1', 'value': 'value1'},
-           {'name': 'name2', 'value': 'value'},
-           {'name': 'name3', 'value': 'value3'}
-]
-cond = mtdcdb.newCondition(xml, '01234567890123', 'CONDITION_NAME', dataset, run = 'A_RUN_WITH_A_NAME')
+dataset = {'01234567890': [{'NAME': 'name1', 'VALUE': 'value1'},
+                           {'NAME': 'name2', 'VALUE': 'value2'},
+                           {'NAME': 'name3', 'VALUE': 'value3'}],
+           '09876543210': [{'NAME': 'name1', 'VALUE': 'valuea'},
+                           {'NAME': 'name2', 'VALUE': 'valueb'},
+                           {'NAME': 'name3', 'VALUE': 'valuec'}]
+}
+cond = mtdcdb.newCondition(xml, 'CONDITION_NAME', dataset, run = 'A_RUN_WITH_A_NAME')
 xml.append(cond)
 
 xmlstring = mtdcdb.mtdxml(xml)

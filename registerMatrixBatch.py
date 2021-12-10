@@ -160,6 +160,7 @@ if os.path.exists(xmlfile):
     
 fxml = open(xmlfile, "w")
 fxmlcond = open('cond-' + xmlfile, "w")
+conditions = {}
 condXml = None
 
 # the root XML document containing parts
@@ -182,17 +183,18 @@ if csvfile != None:
         barcode = 'PRE{:010d}'.format(int(row['barcode']))
         producer = row['producer']
         comment = str(row['comments'])
-        pdata = str(row['pdata'])
+        if 'pdata' in matrices.columns: 
+            pdata = str(row['pdata'])
         if condXml == None:
             condXml = mtdcdb.root()
         if comment == "nan":
             comment = ''
         if pdata == "nan":
             pdata = ''
-        if len(comment) > 0 or len(pdata) > 0:
-            mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma', pdata = pdata,
-                                              description = 'preproduction crystals: these comments were added ' +
-                                              'after actual registration')
+        if len(pdata) > 0 or len(comment) > 0:
+            conditions[barcode] = [{'NAME': 'BATCH_INGOT_DATA', 'VALUE': pdata},
+                                   {'NAME': 'OPERATORCOMMENT', 'VALUE': comment}
+            ]
         serialNumber = None
         if 'serialnumber' in matrices.columns:
             serialNumber = str(row['serialnumber']).strip()
@@ -213,6 +215,7 @@ if csvfile != None:
 
     fxml.write(mtdcdb.mtdxml(myroot))
     if condXml != None:
+        condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = 'VISUAL_INSPECTION');
         fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 elif barcode != '':
@@ -228,9 +231,11 @@ elif barcode != '':
         myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
         bc += 1
     fxml.write(mtdcdb.mtdxml(myroot))
-    if condXml == None:
+    if len(pdata) > 0 or len(comment) > 0:
         condXml = mtdcdb.root()
-        mtdcdb.addVisualInspectionComment(condXml, barcode, comment, location = 'Roma', pdata = pdata)
+        conditions = {barcode: [{'NAME': 'BATCH_INGOT',     'VALUE': pdata},
+                                {'NAME': 'OPERATORCOMMENT', 'VALUE': comment}]}
+        condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = 'VISUAL_INSPECTION')
         fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 fxml.close()

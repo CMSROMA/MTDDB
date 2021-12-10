@@ -139,20 +139,23 @@ def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laborato
 '''
 helpers to create conditions
 '''
-def newCondition(cmntroot, barcode, condition_name, condition_dataset, run = None, location = None,
+def newCondition(cmntroot, condition_name, condition_dataset, run = None, location = None,
                  comment = None, runBegin = None, runEnd = None):
+    if cmntroot == None:
+        cmntroot = root()
     if run == None:
         print('*** WARNING *** : conditions given, but no run details provided.')
         return
-    cond = etree.SubElement(cmntroot, "HEADER")
-    cond_type = etree.SubElement(cond, "TYPE")
+    header = etree.SubElement(cmntroot, "HEADER")
+    cond_type = etree.SubElement(header, "TYPE")
     etree.SubElement(cond_type, "NAME").text = condition_name
     etree.SubElement(cond_type, "EXTENSION_TABLE_NAME").text = condition_name.replace(' ', '_')
-    runElem = newrun(cond, run, begin = runBegin, end = runEnd)
-    cond.append(runElem)
-    dataset = etree.SubElement(cond, "DATA_SET")
-    addDataSet(dataset, barcode, condition_dataset)
-    return cond
+    runElem = newrun(header, run, begin = runBegin, end = runEnd)
+    header.append(runElem)
+    dataset = etree.SubElement(cmntroot, "DATA_SET")
+    addDataSet(dataset, condition_dataset)
+    cmntroot.append(dataset)
+    return cmntroot
 
 def newrun(condition, run, comment = None, user = None, begin = None, location = None, runtype = None,
            runnumber = None, end = None):
@@ -185,15 +188,20 @@ def visualInspectionComment(part_id, comment, user = None, time = None, location
     return 0
 '''
 
-def addDataSet(parent, barcode, dataset):
-    part = etree.SubElement(parent, "PART")
-    etree.SubElement(part, "BARCODE").text = barcode
-    data = etree.SubElement(parent, "DATA")
-    for d in dataset:
-        name = d['name']
-        if d['value']:
-            etree.SubElement(data, name).text = d['value']
-        
+def addDataSet(parent, dataset):
+    for barcode in dataset:
+        part = etree.SubElement(parent, "PART")
+        etree.SubElement(part, "BARCODE").text = barcode
+        data = etree.SubElement(parent, "DATA")
+        actualData = dataset[barcode]
+        for ad in actualData:
+            for k,v in ad.items():
+                ad.update({k.upper(): v})
+            name = ad['NAME']
+            if ad['VALUE']:
+                etree.SubElement(data, name).text = str(ad['VALUE'])
+
+'''                
 def condition(cmntroot, barcode, condition_name, condition_dataset, run = None, location = None,
               comment = None):
     if run == None:
@@ -219,17 +227,15 @@ def condition(cmntroot, barcode, condition_name, condition_dataset, run = None, 
     etree.SubElement(runElem, "RUN_END_TIMESTAMP").text = current_time
     dataset = etree.SubElement(cmntroot, "DATA_SET")
     addDataSet(dataset, barcode, condition_dataset)
+'''
 
 '''
 helpers to create specific conditions
 '''
 def addVisualInspectionComment(cmntroot, barcode, comment = '', location = None, description = None,
                                pdata = None, batch = ''):
-    aComment = condition(cmntroot, barcode,
-                         'XTALREGISTRATION', [{"name": "OPERATORCOMMENT",
-                                               "value": comment},
-                                              {"name": "BATCH_INGOT",
-                                               "value": batch},
-                                              {"name": "BATCH_INGOT_DATA",
-                                               "value": pdata}],
-                         run = 'VISUAL_INSPECTION', location = location, comment = description)
+    conditionDataset = { barcode: [{"name": "OPERATORCOMMENT", "value": comment},
+                                   {"name": "BATCH_INGOT_DATA","value": pdata}]
+    }
+    aComment = newCondition(cmntroot, 'XTALREGISTRATION', conditionDataset,
+                            run = 'VISUAL_INSPECTION', location = location, comment = description)
