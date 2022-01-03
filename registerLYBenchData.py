@@ -5,6 +5,7 @@ import re
 
 filename = '~/Downloads/crystalsDB_LYBench_PMT.csv'
 filename = '~/Downloads/lyDB_SiPM_Array.csv'
+filename = '~/Downloads/lyDB_SiPM_Tofpet.csv'
 csv = pd.read_csv(filename)
 
 # first get the different runs
@@ -25,7 +26,10 @@ for run in runSet:
     # build the dictionary with xtalk
     xtalkdataset = {}
     for index, row in filtered_rows.iterrows():
-        barcode = str(row['id']) + '-' + str(row['bar'])
+        parttype = row['type']
+        barcode = 'PRE{:010d}'.format(int(row['id']))
+        if parttype == 'array':
+            barcode += '-' + str(row['bar'])
         lyAbs = row['ly']
         lyNorm = lyAbs/row['lyRef']
         ctr = row['ctr']
@@ -41,8 +45,14 @@ for run in runSet:
                  {'NAME': 'LY_NORM',     'VALUE': lyNorm}]
         xtalkdataset[barcode] = xtalk
     # create the condition
-    condition = mtdcdb.newCondition(root, 'LY_XTALK', xtalkdataset, run = 'LYBench_PMT',
-                                    comment = run, runBegin = run_begin)
+    run_dict = { 'name': run,
+                 'type': 'TOFPET',
+                 'number': -1,
+                 'comment': '',
+                 'location': 'Roma/Tofpet'
+        }
+    condition = mtdcdb.newCondition(root, 'LY_XTALK', xtalkdataset, run = run_dict,
+                                    runBegin = run_begin)
     # dump the XML file
     print(mtdcdb.mtdxml(condition))
 

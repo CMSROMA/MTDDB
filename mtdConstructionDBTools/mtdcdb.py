@@ -128,7 +128,9 @@ def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laborato
         singlextal = etree.SubElement(matrixxml, "CHILDREN")
     xtal = ''
     for i in range(multiplicity):
-        cbarcode = barcode + '-' + str(i)
+        cbarcode = barcode
+        if multiplicity > 1:
+            cbarcode += '-' + str(i)
         xtal = part(cbarcode, 'singleBarCrystal', attributes = [], user = user, location = laboratory)
         singlextal.append(xtal)
 
@@ -139,11 +141,11 @@ def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laborato
 '''
 helpers to create conditions
 '''
-def newCondition(cmntroot, condition_name, condition_dataset, run = None, location = None,
-                 comment = None, runBegin = None, runEnd = None):
+def newCondition(cmntroot, condition_name, condition_dataset, run,
+                 runBegin = None, runEnd = None):
     if cmntroot == None:
         cmntroot = root()
-    if run == None:
+    if str(run['type']) == None:
         print('*** WARNING *** : conditions given, but no run details provided.')
         return
     header = etree.SubElement(cmntroot, "HEADER")
@@ -157,21 +159,27 @@ def newCondition(cmntroot, condition_name, condition_dataset, run = None, locati
     cmntroot.append(dataset)
     return cmntroot
 
-def newrun(condition, run, comment = None, user = None, begin = None, location = None, runtype = None,
-           runnumber = None, end = None):
+def newrun(condition, run = {}, begin = None, end = None):
     runElem = etree.SubElement(condition, "RUN")
     if begin == None:
         now = datetime.now()
         begin = now.strftime("%Y-%m-%d %H:%M:%S")
     if end == None:
         end = begin
-    if type(run) is str:
-        etree.SubElement(runElem, "RUN_NAME").text = run
-    else:
-        etree.SubElement(runElem, "RUN_TYPE").text = run['type']
+    if str(run['name']) != '':
+        etree.SubElement(runElem, "RUN_NAME").text = run['name']
+    etree.SubElement(runElem, "RUN_TYPE").text = run['type']
+    if int(run['number']) != -1:
         etree.SubElement(runElem, "RUN_NUMBER").text = run['number']
     etree.SubElement(runElem, "RUN_BEGIN_TIMESTAMP").text = begin
     etree.SubElement(runElem, "RUN_END_TIMESTAMP").text = end
+    if str(run['comment']) != '':
+        etree.SubElement(runElem, "COMMENT_DESCRIPTION").text = run['comment']
+    if str(run['location']) != '':
+        etree.SubElement(runElem, "LOCATION").text = run['location']
+    if not 'user' in run or str(run['user']) == '':
+        run['user'] = getpass.getuser()
+    etree.SubElement(runElem, "INITIATED_BY_USER").text = run['user']    
     return runElem
 
 '''
@@ -237,5 +245,7 @@ def addVisualInspectionComment(cmntroot, barcode, comment = '', location = None,
     conditionDataset = { barcode: [{"name": "OPERATORCOMMENT", "value": comment},
                                    {"name": "BATCH_INGOT_DATA","value": pdata}]
     }
+    run = { 'type': 'VISUAL_INSPECTION' }
     aComment = newCondition(cmntroot, 'XTALREGISTRATION', conditionDataset,
-                            run = 'VISUAL_INSPECTION', location = location, comment = description)
+                            run_type = 'VISUAL_INSPECTION', location = location,
+                            comment = description)
