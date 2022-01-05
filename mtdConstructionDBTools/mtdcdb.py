@@ -51,6 +51,7 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             time.sleep(1)
         print('File uploaded...waiting for completion...done')
         l = 'This is a dry run'
+        lst = ''
         if not dryrun:
             cp = subprocess.run(['ssh', '-p',
                                  str(port), user + '@localhost',
@@ -59,13 +60,17 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
                                 capture_output = True)
             # get the last line of the log file
             l = str(cp.stdout)
-        ret = -1
-        lst = l.split('\\n')
-        if len(lst) >= 2:
-            l = lst[-2]
-            if re.match('.* - commit transaction', l):
-                ret = 0
-                print('    SUCCESS    ')
+            ret = -1
+            lst = l.split('\\n')
+        if len(lst) >= 2 or dryrun:
+            if not dryrun:
+                l = lst[-2]
+                if re.match('.* - commit transaction', l):
+                    ret = 0
+                    print('    SUCCESS    ')
+                else:
+                    ret = 0
+                    print('    SUCCESS    ')
         else:
             print('*** ERR *** ' + l)
             print('(*) DB uploading can take time to complete. The above message is a guess.')
@@ -165,6 +170,7 @@ helpers to create conditions
 '''
 def newCondition(cmntroot, condition_name, condition_dataset, run,
                  runBegin = None, runEnd = None):
+    print(f'{runBegin} {runEnd}')
     if cmntroot == None:
         cmntroot = root()
     if str(run['type']) == None:
@@ -186,6 +192,7 @@ def newrun(condition, run = {}, begin = None, end = None):
         begin = now.strftime("%Y-%m-%d %H:%M:%S")
     if end == None:
         end = begin
+    print(f'{begin} {end}')
     if str(run['name']) != '':
         etree.SubElement(runElem, "RUN_NAME").text = run['name']
     etree.SubElement(runElem, "RUN_TYPE").text = run['type']

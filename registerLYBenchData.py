@@ -26,11 +26,11 @@ for run in runSet:
     filtered_rows = csv.loc[csv['tag'] == run]
     # extract the begin time of a run from its tag
     run_begin = None
-    try:
-        m = re.search('_[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}', run)
-        run_begin = m[1:]
-    except:
-        run_begin = None
+    m = re.search('_[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}', run)
+    if m:
+        run_begin = m.group(0)
+        run_begin = re.sub('_', '', run_begin)
+        run_begin = re.sub('-([0-9]{2})-([0-9]{2})-([0-9]{2})$', ' \\1:\\2:\\3', run_begin)
     # build the dictionary with xtalk
     xtalkdataset = {}
     for index, row in filtered_rows.iterrows():
