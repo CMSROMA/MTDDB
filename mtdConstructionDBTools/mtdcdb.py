@@ -35,29 +35,6 @@ def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
         print('       ' + shrtOpts[i] + ' ('+ longOpts[i] + '): ' + helpOpts[i])
     exit(err)
 
-def checkTransfer(filename, port = 50022, user = None, dryrun = False):
-    ret = False
-    if user == None:
-        user = getpass.getuser()
-    if not dryrun:
-        tmpfile = '/tmp/' + str(time.time())
-        subprocess.run(['scp', '-P', str(port), user + '@localhost:/home/dbspool/spool/mtd/int2r/' +
-                        filename, tmpfile])
-        with open(tmpfile, 'rb') as f:
-            try:  # catch OSError in case of a one line file 
-                f.seek(-2, os.SEEK_END)
-                while f.read(1) != b'\n':
-                    f.seek(-2, os.SEEK_CUR)
-            except OSError:
-                f.seek(0)
-            last_line = f.readline().decode()
-            if 'commit transaction' in last_line:
-                ret = True
-        os.remove(tmpfile)
-    else:
-        ret = True
-    return ret
-
 def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False,
               user = None, wait = 10):
     if filename != 'registerMatrixBatch.xml':
