@@ -12,6 +12,16 @@ import math
 '''
 general services
 '''
+def initiateSession(user = None, port = 50022):
+    if user == None:
+        user = getpass.getuser()
+    subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
+
+def terminateSession(user = None, port = 50022):
+    if user == None:
+        user = getpass.getuser()
+    subprocess.run(['ssh', '-O', 'exit', '-p', str(port), user + '@localhost'])
+    
 def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     print(f'Usage: {sys.argv[0]} [options]')
     if len(hlp) > 0:
@@ -25,15 +35,40 @@ def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
         print('       ' + shrtOpts[i] + ' ('+ longOpts[i] + '): ' + helpOpts[i])
     exit(err)
 
-def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False, user = None):
+def checkTransfer(filename, port = 50022, user = None, dryrun = False):
+    ret = False
+    if user == None:
+        user = getpass.getuser()
+    if not dryrun:
+        tmpfile = '/tmp/' + str(time.time())
+        subprocess.run(['scp', '-P', str(port), user + '@localhost:/home/dbspool/spool/mtd/int2r/' +
+                        filename, tmpfile])
+        with open(tmpfile, 'rb') as f:
+            try:  # catch OSError in case of a one line file 
+                f.seek(-2, os.SEEK_END)
+                while f.read(1) != b'\n':
+                    f.seek(-2, os.SEEK_CUR)
+            except OSError:
+                f.seek(0)
+            last_line = f.readline().decode()
+            if 'commit transaction' in last_line:
+                ret = True
+        os.remove(tmpfile)
+    else:
+        ret = True
+    return ret
+
+def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False,
+              user = None, wait = 10):
     if filename != 'registerMatrixBatch.xml':
         if user == None:
             user = getpass.getuser()
         if not dryrun:
+            xmlfile = os.path.basename(filename)
             subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
                             filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' +
-                            filename])
-        for i in range(10, 0, -1):
+                            xmlfile])
+        for i in range(wait, 0, -1):
             sys.stdout.write('File uploaded...waiting for completion...' + str(i)+'    \r')
             sys.stdout.flush()
             time.sleep(1)
@@ -43,7 +78,7 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             cp = subprocess.run(['ssh', '-p',
                                  str(port), user + '@localhost',
                                  'cat /home/dbspool/logs/mtd/int2r/' +
-                                 filename],
+                                 xmlfile],
                                 capture_output = True)
             # get the last line of the log file
             l = str(cp.stdout)
@@ -72,6 +107,16 @@ def root():
     root = etree.Element("ROOT", encoding = 'xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance')
     return root
 
+def transfer(xml, filename = None, dryrun = False, user = None):
+    path = filename
+    if filename == None:
+        path = '/tmp/' + str(time.time())
+    xmlfile = open(path, 'w')
+    xmlfile.write(mtdxml(xml))
+    xmlfile.close()
+    writeToDB(filename = path, dryrun = dryrun, user = user, wait = 3)
+    os.remove(path)
+    
 def mtdxml(root):
     # print xml
     return etree.tostring(root, encoding='UTF-8', standalone = 'yes', xml_declaration=True,
@@ -154,9 +199,7 @@ def newCondition(cmntroot, condition_name, condition_dataset, run,
     etree.SubElement(cond_type, "EXTENSION_TABLE_NAME").text = condition_name.replace(' ', '_')
     runElem = newrun(header, run, begin = runBegin, end = runEnd)
     header.append(runElem)
-    dataset = etree.SubElement(cmntroot, "DATA_SET")
-    addDataSet(dataset, condition_dataset)
-    cmntroot.append(dataset)
+    addDataSet(cmntroot, condition_dataset)
     return cmntroot
 
 def newrun(condition, run = {}, begin = None, end = None):
@@ -198,9 +241,10 @@ def visualInspectionComment(part_id, comment, user = None, time = None, location
 
 def addDataSet(parent, dataset):
     for barcode in dataset:
-        part = etree.SubElement(parent, "PART")
+        ds = etree.SubElement(parent, "DATA_SET")
+        part = etree.SubElement(ds, "PART")
         etree.SubElement(part, "BARCODE").text = barcode
-        data = etree.SubElement(parent, "DATA")
+        data = etree.SubElement(ds, "DATA")
         actualData = dataset[barcode]
         for ad in actualData:
             for k,v in ad.items():

@@ -3,17 +3,25 @@ import pandas as pd
 import datetime
 import re
 
+debug = False
+
 filename = '~/Downloads/crystalsDB_LYBench_PMT.csv'
 filename = '~/Downloads/lyDB_SiPM_Array.csv'
 filename = '~/Downloads/lyDB_SiPM_Tofpet.csv'
+filename = './fake_Tofpet.csv'
 csv = pd.read_csv(filename)
 
 # first get the different runs
 runs = csv['tag']
 runSet = set(runs)
 
+# ssh session management
+# add the following line to your .ssh/config file
+# ControlPath ~/.ssh/control-%h-%p-%r
+mtdcdb.initiateSession()
 # iterate over runs
 for run in runSet:
+    # create an XML structure per run
     root = mtdcdb.root()
     filtered_rows = csv.loc[csv['tag'] == run]
     # extract the begin time of a run from its tag
@@ -27,7 +35,15 @@ for run in runSet:
     xtalkdataset = {}
     for index, row in filtered_rows.iterrows():
         parttype = row['type']
-        barcode = 'PRE{:010d}'.format(int(row['id']))
+        barcode = row['id']
+        # get the barcode: if it is in the form FK% it has been already formatted
+        #                  otherwise, if it is a plain, short, integer, we need to
+        #                  format it. For preproduction parts we prepend the string
+        #                  PRE to the barcode
+        if not 'FK' in barcode:
+            barcode = 'PRE{:010d}'.format(int(row['id']))
+        # if this is an array, the barcode is composed from the barcode of the array
+        # followed by the bar index
         if parttype == 'array':
             barcode += '-' + str(row['bar'])
         lyAbs = row['ly']
@@ -44,18 +60,20 @@ for run in runSet:
                  {'NAME': 'XTRIGHT',     'VALUE': xtRight},
                  {'NAME': 'LY_NORM',     'VALUE': lyNorm}]
         xtalkdataset[barcode] = xtalk
-    # create the condition
+    #create the run    
     run_dict = { 'name': run,
                  'type': 'TOFPET',
                  'number': -1,
                  'comment': '',
                  'location': 'Roma/Tofpet'
         }
-    condition = mtdcdb.newCondition(root, 'LY_XTALK', xtalkdataset, run = run_dict,
+    # create the condition
+    condition = mtdcdb.newCondition(root, 'LY XTALK', xtalkdataset, run = run_dict,
                                     runBegin = run_begin)
     # dump the XML file
-    print(mtdcdb.mtdxml(condition))
-
-
+    mtdcdb.transfer(condition)
+    if debug:
+        print(mtdcdb.mtdxml(condition))
     
+mtdcdb.terminateSession()
 
