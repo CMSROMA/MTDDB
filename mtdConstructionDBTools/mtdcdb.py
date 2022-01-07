@@ -234,7 +234,7 @@ def addDataSet(parent, dataset):
             for k,v in ad.items():
                 ad.update({k.upper(): v})
             name = ad['NAME']
-            if ad['VALUE']:
+            if 'VALUE' in ad:
                 etree.SubElement(data, name).text = str(ad['VALUE'])
 
 '''                
