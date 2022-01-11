@@ -73,8 +73,8 @@ for run in runSet:
         run_begin = m.group(0)
         run_begin = re.sub('_', '', run_begin)
         run_begin = re.sub('-([0-9]{2})-([0-9]{2})-([0-9]{2})$', ' \\1:\\2:\\3', run_begin)
-    # build the dictionary with xtalk
-    xtalkdataset = {}
+    # build the dictionary with data
+    xdataset = {}
     for index, row in filtered_rows.iterrows():
         parttype = row['type']
         barcode = str(row['id'])
@@ -90,18 +90,31 @@ for run in runSet:
             barcode += '-' + str(row['bar'])
         lyAbs = row['ly']
         lyNorm = lyAbs/row['lyRef']
-        ctr = row['ctr']
-        sigma_t = row['sigmaT']
-        temperature = row['temp']
-        xtLeft = row['xtLeft']
-        xtRight = row['xtRight']
-        xtalk = [{'NAME': 'CTR',         'VALUE': ctr},
-                 {'NAME': 'SIGMA_T',     'VALUE': sigma_t},
-                 {'NAME': 'TEMPERATURE', 'VALUE': temperature},
-                 {'NAME': 'XTLEFT',      'VALUE': xtLeft},
-                 {'NAME': 'XTRIGHT',     'VALUE': xtRight},
-                 {'NAME': 'LY_NORM',     'VALUE': lyNorm}]
-        xtalkdataset[barcode] = xtalk
+        xdata = []
+        if source == 'PMT':
+            b_rms = row['b_rms']
+            b_3s_asym = row['b_3s_asym']
+            b_2s_asym = row['b_2s_asym']
+            decay_time = row['decay_time']
+            xdata = [{'NAME': 'B_RMS',      'VALUE': b_rms},
+                     {'NAME': 'B_3S_ASYM',  'VALUE': b_3s_asym},
+                     {'NAME': 'B_2S_ASYM',  'VALUE': b_2s_asym},
+                     {'NAME': 'LY_ABS',     'VALUE': lyAbs},
+                     {'NAME': 'DECAY_TIME', 'VALUE': decay_time},
+                     {'NAME': 'LY_NORM',    'VALUE': lyNorm}]
+        else:
+            ctr = row['ctr']
+            sigma_t = row['sigmaT']
+            temperature = row['temp']
+            xtLeft = row['xtLeft']
+            xtRight = row['xtRight']
+            xdata = [{'NAME': 'CTR',         'VALUE': ctr},
+                     {'NAME': 'SIGMA_T',     'VALUE': sigma_t},
+                     {'NAME': 'TEMPERATURE', 'VALUE': temperature},
+                     {'NAME': 'XTLEFT',      'VALUE': xtLeft},
+                     {'NAME': 'XTRIGHT',     'VALUE': xtRight},
+                     {'NAME': 'LY_NORM',     'VALUE': lyNorm}]
+        xdataset[barcode] = xdata
     #create the run    
     run_dict = { 'name': run,
                  'type': source,
@@ -110,7 +123,10 @@ for run in runSet:
                  'location': 'Roma/' + source
         }
     # create the condition
-    condition = mtdcdb.newCondition(root, 'LY XTALK', xtalkdataset, run = run_dict,
+    condName = 'LY XTALK'
+    if source == 'PMT':
+        condName = 'LY MEASUREMENT'
+    condition = mtdcdb.newCondition(root, condName, xdataset, run = run_dict,
                                     runBegin = run_begin)
     # dump the XML file
     mtdcdb.transfer(condition, dryrun = dryrun)
