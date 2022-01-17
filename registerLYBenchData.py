@@ -104,16 +104,21 @@ for run in runSet:
                      {'NAME': 'LY_NORM',    'VALUE': lyNorm}]
         else:
             ctr = row['ctr']
+            ctr_norm = ctr/row['ctrRef']
             sigma_t = row['sigmaT']
+            sigma_t_norm = sigma_t/row['sigmaTRef']
             temperature = row['temp']
             xtLeft = row['xtLeft']
             xtRight = row['xtRight']
-            xdata = [{'NAME': 'CTR',         'VALUE': ctr},
-                     {'NAME': 'SIGMA_T',     'VALUE': sigma_t},
-                     {'NAME': 'TEMPERATURE', 'VALUE': temperature},
-                     {'NAME': 'XTLEFT',      'VALUE': xtLeft},
-                     {'NAME': 'XTRIGHT',     'VALUE': xtRight},
-                     {'NAME': 'LY_NORM',     'VALUE': lyNorm}]
+            xdata = [{'NAME': 'CTR',          'VALUE': ctr},
+                     {'NAME': 'CTR_NORM',     'VALUE': ctr},
+                     {'NAME': 'TEMPERATURE',  'VALUE': temperature},
+                     {'NAME': 'XTLEFT',       'VALUE': xtLeft},
+                     {'NAME': 'XTRIGHT',      'VALUE': xtRight},
+                     {'NAME': 'LY',           'VALUE': lyAbs},                     
+                     {'NAME': 'LY_NORM',      'VALUE': lyNorm},
+                     {'NAME': 'SIGMA_T',      'VALUE': sigma_t},
+                     {'NAME': 'SIGMA_T_NORM', 'VALUE': sigma_t_norm}]
         xdataset[barcode] = xdata
     #create the run    
     run_dict = { 'name': run,

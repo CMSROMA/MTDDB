@@ -168,6 +168,9 @@ myroot = mtdcdb.root()
 parts = etree.SubElement(myroot, "PARTS")
 
 import pandas as pd
+
+mtdcdb.initiateSession(username)
+
 if csvfile != None:
     matrices = pd.read_csv(csvfile, sep = None, engine = 'python')
     # normalise column headers ignoring case, leading and trailing spaces and unwanted characters
@@ -204,6 +207,7 @@ if csvfile != None:
                 l = len(serialNumber)
                 print(f'Serial number {serialNumber} for part {barcode} too long')
                 print(f'       the maximum allowed length is 40; it is {l}...exiting...')
+                mtdcdb.terminateSession(username)
                 exit(-1)
         print(f'Registering matrix {barcode} of type {partType} made by producer {producer}', end = '')
         if serialNumber != None:
@@ -219,17 +223,23 @@ if csvfile != None:
         fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 elif barcode != '':
-    try:
-        bc = int(barcode)
-    except ValueError:
-        print('[*** ERR ***] barcode must be an integer')
-        exit(-1)
+    bc = barcode
+    if len(barcode) != 13:
+        try:
+            bc = int(barcode)
+        except ValueError:
+            print('[*** ERR ***] barcode must be an integer or have a length of 13')
+            mtdcdb.terminateSession(username)
+            exit(-1)
     for i in range(nbarcodes):
         partType = f'LYSOMatrix #{Xtaltype}'
-        sbarcode = 'PRE{:010d}'.format(bc)
+        sbarcode = bc
+        if len(sbarcode) != 13:
+            sbarcode = 'PRE{:010d}'.format(bc)            
         print(f'Registering matrix {sbarcode} of type {Xtaltype} made by producer {producer}')
         myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
-        bc += 1
+        if len(sbarcode) != 13:
+            bc += 1
     fxml.write(mtdcdb.mtdxml(myroot))
     if len(pdata) > 0 or len(comment) > 0:
         condXml = mtdcdb.root()
@@ -245,6 +255,8 @@ if write:
     print('Transferring XML to the dbloader...', end = '')
     mtdcdb.writeToDB(filename = xmlfile, user = username)
     print('done')
+
+mtdcdb.terminateSession()
 
 exit(0)
 
