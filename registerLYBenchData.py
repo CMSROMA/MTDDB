@@ -75,11 +75,13 @@ for run in runSet:
         run_begin = m.group(0)
         run_begin = re.sub('_', '', run_begin)
         run_begin = re.sub('-([0-9]{2})-([0-9]{2})-([0-9]{2})$', ' \\1:\\2:\\3', run_begin)
-    if source != 'PMT':
-        run_begin = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(csv['time']))
     # build the dictionary with data
     xdataset = {}
     for index, row in filtered_rows.iterrows():
+        if source == 'PMT':
+            run_begin = row['time']
+            print(run_begin)
+            run_begin = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(run_begin))
         parttype = row['type']
         barcode = str(row['id'])
         # get the barcode: if it is in the form FK% it has been already formatted
