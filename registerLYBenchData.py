@@ -2,12 +2,13 @@ from mtdConstructionDBTools import mtdcdb
 import pandas as pd
 import getopt
 import sys
-import datetime
+import time
 import re
 
-debug = False
-dryrun = False
-source = 'TOFPET'
+debug   = False
+dryrun  = False
+source  = 'TOFPET'
+csvHead = 'runName'
 
 shrtOpts = 'hdf:tap'
 longOpts = ['help', 'debug', 'file=', 'tofpet', 'array', 'pmt']
@@ -47,13 +48,14 @@ for o, a in opts:
         source = 'TOFPET'
     elif o in ('-p', '--pmt'):
         source = 'PMT'
+        csvHead = 'tag'
     elif o in ('-a', '--array'):
         source = 'ARRAY'        
 
 csv = pd.read_csv(filename)
 
 # first get the different runs
-runs = csv['tag']
+runs = csv[csvHead]
 runSet = set(runs)
 
 # ssh session management
@@ -65,14 +67,16 @@ if not debug:
 for run in runSet:
     # create an XML structure per run
     root = mtdcdb.root()
-    filtered_rows = csv.loc[csv['tag'] == run]
-    # extract the begin time of a run from its tag
+    filtered_rows = csv.loc[csv[csvHead] == run]
+    # extract the begin time of a run from its tag, if 
     run_begin = None
     m = re.search('_[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}', run)
     if m:
         run_begin = m.group(0)
         run_begin = re.sub('_', '', run_begin)
         run_begin = re.sub('-([0-9]{2})-([0-9]{2})-([0-9]{2})$', ' \\1:\\2:\\3', run_begin)
+    if source != 'PMT':
+        run_begin = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(csv['time']))
     # build the dictionary with data
     xdataset = {}
     for index, row in filtered_rows.iterrows():
