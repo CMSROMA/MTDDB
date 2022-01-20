@@ -48,7 +48,6 @@ for o, a in opts:
         source = 'TOFPET'
     elif o in ('-p', '--pmt'):
         source = 'PMT'
-        csvHead = 'tag'
     elif o in ('-a', '--array'):
         source = 'ARRAY'        
 
