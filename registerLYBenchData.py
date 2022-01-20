@@ -116,7 +116,7 @@ for run in runSet:
             xtLeft = row['xtLeft']
             xtRight = row['xtRight']
             xdata = [{'NAME': 'CTR',          'VALUE': ctr},
-                     {'NAME': 'CTR_NORM',     'VALUE': ctr},
+                     {'NAME': 'CTR_NORM',     'VALUE': ctr_norm},
                      {'NAME': 'TEMPERATURE',  'VALUE': temperature},
                      {'NAME': 'XTLEFT',       'VALUE': xtLeft},
                      {'NAME': 'XTRIGHT',      'VALUE': xtRight},
