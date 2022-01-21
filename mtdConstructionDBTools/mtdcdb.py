@@ -107,7 +107,7 @@ def root():
 def transfer(xml, filename = None, dryrun = False, user = None):
     path = filename
     if filename == None:
-        path = '/tmp/' + str(time.time())
+        path = '/tmp/' + str(time.time()) + '.xml'
     xmlfile = open(path, 'w')
     xmlfile.write(mtdxml(xml))
     xmlfile.close()
