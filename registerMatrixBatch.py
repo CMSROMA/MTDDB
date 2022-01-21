@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 '''
 
 registerMatrixBatch.py
@@ -12,7 +13,9 @@ import random
 import getpass
 import sys
 import os
+import subprocess
 import getopt
+import re
 from mtdConstructionDBTools import mtdcdb
 
 PRODUCER_MAX = 12
@@ -38,13 +41,15 @@ helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'operator comments',
             'register single crystals']
 
-hlp = ('Generates the XML file needed to register one or more LYSO matrices.\n' 
-       'If you provide a CSV file name, all the matrices included in the file\n' 
-       'are processed. If you provide a single barcode, this script generates\n' 
+hlp = ('Generates the XML file needed to register one or more LYSO matrices or\n' 
+       'single crystal. If you provide a CSV file name, all the parts included\n'
+       'in it are processed. If you provide a single barcode, this script generates\n' 
        'the XML for just the given barcode. Providing option n, generates n.\n' 
        'matrices whose barcode starts with barcode and ends with barcode + n.\n\n'
        'In order to ship data to CERN, you need to setup a tunnel as follows:\n'
-       'ssh -L 50022:dbloader-mtd.cern.ch:22 <your-cern-username>@lxplus.cern.ch')
+       'ssh -L 50022:dbloader-mtd.cern.ch:22 <your-cern-username>@lxplus.cern.ch\n\n'
+       'EXAMPLES:\n'
+       './registerMatrixBatch')
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], shrtOpts, longOpts)
@@ -58,7 +63,7 @@ producer = ''
 Xtaltype = ''
 csvfile = None
 laboratory = 'Roma'
-xmlfile = sys.argv[0].replace('.py', '.xml')
+xmlfile = os.path.basename(sys.argv[0]).replace('.py', '.xml')
 nbarcodes = 1
 write = False
 username = None
@@ -171,6 +176,8 @@ import pandas as pd
 
 mtdcdb.initiateSession(username)
 
+processedbarcodes = []
+
 if csvfile != None:
     matrices = pd.read_csv(csvfile, sep = None, engine = 'python')
     # normalise column headers ignoring case, leading and trailing spaces and unwanted characters
@@ -216,6 +223,7 @@ if csvfile != None:
             print()
         matrixxml = mtdcdb.mtdcreateMatrix(parts, barcode, Xtaltype, producer, batchIngot, laboratory,
                                            serial = serialNumber, user = username, multiplicity = multiplicity)
+        processedbarcodes.append(barcode)
 
     fxml.write(mtdcdb.mtdxml(myroot))
     if condXml != None:
@@ -233,13 +241,13 @@ elif barcode != '':
             exit(-1)
     for i in range(nbarcodes):
         partType = f'LYSOMatrix #{Xtaltype}'
-        sbarcode = bc
+        sbarcode = str(bc)
         if len(sbarcode) != 13:
             sbarcode = 'PRE{:010d}'.format(bc)            
         print(f'Registering matrix {sbarcode} of type {Xtaltype} made by producer {producer}')
         myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
-        if len(sbarcode) != 13:
-            bc += 1
+        processedbarcodes.append(sbarcode)
+        bc += 1
     fxml.write(mtdcdb.mtdxml(myroot))
     if len(pdata) > 0 or len(comment) > 0:
         condXml = mtdcdb.root()
@@ -256,7 +264,19 @@ if write:
     mtdcdb.writeToDB(filename = xmlfile, user = username)
     print('done')
 
-mtdcdb.terminateSession()
+mtdcdb.terminateSession(username)
+
+# check the results using rhapi.py
+print('Operation summary:')
+for barcode in processedbarcodes:
+    r = subprocess.run('/usr/bin/python3 ./rhapi.py --url=http://localhost:8113  '
+                       '"select * from mtd_int2r.parts p where p.barcode = \'' +
+                       barcode + '\'" -s 10', shell = True, stdout = subprocess.PIPE)
+    print(barcode, end = ': ')
+    if barcode in str(r.stdout):
+        print('Success')
+    else:
+        print('Failed')
 
 exit(0)
 

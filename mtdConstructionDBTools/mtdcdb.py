@@ -12,14 +12,29 @@ import math
 '''
 general services
 '''
+def opentunnel(user = None, port = 50022):
+    if user == None:
+        user = getpass.getuser()
+    print('    need to open a tunnel...')
+    subprocess.run(['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22', 
+                    '-L', '8113:dbloader-mtd.cern.ch:8113',
+                    user + '@lxplus.cern.ch'])
+
 def initiateSession(user = None, port = 50022):
     if user == None:
         user = getpass.getuser()
-    subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
+    try:
+        print('=== initiating session...')
+        subprocess.check_call(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
+    except subprocess.CalledProcessError:
+        opentunnel(user, port)
+        print('=== retrying to initiate a session...')
+        subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
 
 def terminateSession(user = None, port = 50022):
     if user == None:
         user = getpass.getuser()
+    print('=== terminating session...')
     subprocess.run(['ssh', '-O', 'exit', '-p', str(port), user + '@localhost'])
     
 def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
