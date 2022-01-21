@@ -116,7 +116,7 @@ for o, a in opts:
         pdata = a
     elif o in ('-c', '--comment'):
         comment = a
-    elif o in ('s', '--single'):
+    elif o in ('-s', '--single'):
         multiplicity = 0
     else:
         assert False, 'unhandled option'
@@ -216,7 +216,10 @@ if csvfile != None:
                 print(f'       the maximum allowed length is 40; it is {l}...exiting...')
                 mtdcdb.terminateSession(username)
                 exit(-1)
-        print(f'Registering matrix {barcode} of type {partType} made by producer {producer}', end = '')
+        ptype = 'matrix'
+        if multiplicity == 0:
+            ptype = 'bar'
+        print(f'Registering {ptype} {barcode} of type {partType} made by producer {producer}', end = '')
         if serialNumber != None:
             print(f' (serial #: {serialNumber})')
         else:
@@ -241,11 +244,15 @@ elif barcode != '':
             exit(-1)
     for i in range(nbarcodes):
         partType = f'LYSOMatrix #{Xtaltype}'
+        if multiplicity == 0:
+            Xtaltype = 'singleBarCrystal'
+            partType = 'singleBarCrystal'
         sbarcode = str(bc)
         if len(sbarcode) != 13:
             sbarcode = 'PRE{:010d}'.format(bc)            
         print(f'Registering matrix {sbarcode} of type {Xtaltype} made by producer {producer}')
-        myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, laboratory)
+        myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, 
+                                        laboratory, multiplicity = multiplicity)
         processedbarcodes.append(sbarcode)
         bc += 1
     fxml.write(mtdcdb.mtdxml(myroot))

@@ -160,7 +160,7 @@ def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laborato
 
     # create the matrix part 
     LYSOMatrixtype = f'LYSOMatrix #{Xtaltype}'
-    if multiplicity == 1:
+    if multiplicity == 0:
         LYSOMatrixtype = 'singleBarCrystal'
     matrixxml = part(barcode, LYSOMatrixtype, batch = batchIngot, attributes = attrs, user = user,
                      location = laboratory, manufacturer = manufacturer, serial = serial)
