@@ -185,10 +185,13 @@ helpers to create conditions
 '''
 def newCondition(cmntroot, condition_name, condition_dataset, run,
                  runBegin = None, runEnd = None):
+    print('--------------')
+    print(run)
+    print('--------------')
     print(f'{runBegin} {runEnd}')
     if cmntroot == None:
         cmntroot = root()
-    if str(run['type']) == None:
+    if 'TYPE' in run.keys() and str(run['TYPE']) == None:
         print('*** WARNING *** : conditions given, but no run details provided.')
         return
     header = etree.SubElement(cmntroot, "HEADER")
@@ -208,20 +211,21 @@ def newrun(condition, run = {}, begin = None, end = None):
     if end == None:
         end = begin
     print(f'{begin} {end}')
-    if str(run['name']) != '':
-        etree.SubElement(runElem, "RUN_NAME").text = run['name']
-    etree.SubElement(runElem, "RUN_TYPE").text = run['type']
-    if int(run['number']) != -1:
-        etree.SubElement(runElem, "RUN_NUMBER").text = run['number']
+    if str(run['NAME']) != '':
+        etree.SubElement(runElem, "RUN_NAME").text = run['NAME']
+    if 'TYPE' in run.keys():
+        etree.SubElement(runElem, "RUN_TYPE").text = run['TYPE']
+    if 'NUMBER' in run.keys() and int(run['NUMBER']) != -1:
+        etree.SubElement(runElem, "RUN_NUMBER").text = run['NUMBER']
     etree.SubElement(runElem, "RUN_BEGIN_TIMESTAMP").text = begin
     etree.SubElement(runElem, "RUN_END_TIMESTAMP").text = end
-    if str(run['comment']) != '':
-        etree.SubElement(runElem, "COMMENT_DESCRIPTION").text = run['comment']
-    if str(run['location']) != '':
-        etree.SubElement(runElem, "LOCATION").text = run['location']
+    if 'COMMENT' in run.keys() and str(run['COMMENT']) != '':
+        etree.SubElement(runElem, "COMMENT_DESCRIPTION").text = run['COMMENT']
+    if str(run['LOCATION']) != '':
+        etree.SubElement(runElem, "LOCATION").text = run['LOCATION']
     if not 'user' in run or str(run['user']) == '':
-        run['user'] = getpass.getuser()
-    etree.SubElement(runElem, "INITIATED_BY_USER").text = run['user']    
+        run['USER'] = getpass.getuser()
+    etree.SubElement(runElem, "INITIATED_BY_USER").text = run['USER']    
     return runElem
 
 '''

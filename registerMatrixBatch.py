@@ -178,6 +178,10 @@ mtdcdb.initiateSession(username)
 
 processedbarcodes = []
 
+runDict = { 'NAME': 'VISUAL_INSPECTION',
+            'LOCATION': 'Roma',
+            'USER': username
+        }
 if csvfile != None:
     matrices = pd.read_csv(csvfile, sep = None, engine = 'python')
     # normalise column headers ignoring case, leading and trailing spaces and unwanted characters
@@ -230,7 +234,7 @@ if csvfile != None:
 
     fxml.write(mtdcdb.mtdxml(myroot))
     if condXml != None:
-        condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = 'VISUAL_INSPECTION');
+        condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = runDict);
         fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 elif barcode != '':
@@ -260,7 +264,7 @@ elif barcode != '':
         condXml = mtdcdb.root()
         conditions = {barcode: [{'NAME': 'BATCH_INGOT',     'VALUE': pdata},
                                 {'NAME': 'OPERATORCOMMENT', 'VALUE': comment}]}
-        condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = 'VISUAL_INSPECTION')
+        condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = runDict)
         fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 fxml.close()
