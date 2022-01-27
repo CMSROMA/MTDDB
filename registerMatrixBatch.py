@@ -182,6 +182,8 @@ runDict = { 'NAME': 'VISUAL_INSPECTION',
             'LOCATION': 'Roma',
             'USER': username
         }
+
+# processing CSV file 
 if csvfile != None:
     matrices = pd.read_csv(csvfile, sep = None, engine = 'python')
     # normalise column headers ignoring case, leading and trailing spaces and unwanted characters
@@ -246,6 +248,8 @@ elif barcode != '':
             print('[*** ERR ***] barcode must be an integer or have a length of 13')
             mtdcdb.terminateSession(username)
             exit(-1)
+    condXml = mtdcdb.root()
+    # processing parts with given name
     for i in range(nbarcodes):
         partType = f'LYSOMatrix #{Xtaltype}'
         if multiplicity == 0:
@@ -256,16 +260,15 @@ elif barcode != '':
             sbarcode = 'PRE{:010d}'.format(bc)            
         print(f'Registering matrix {sbarcode} of type {Xtaltype} made by producer {producer}')
         myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, 
-                                        laboratory, multiplicity = multiplicity)
+                                        laboratory, multiplicity = multiplicity, user = username)
         processedbarcodes.append(sbarcode)
+        if len(pdata) > 0 or len(comment) > 0:
+            conditions[sbarcode] = [{'NAME': 'BATCH_INGOT_DATA', 'VALUE': pdata},
+                                    {'NAME': 'OPERATORCOMMENT',  'VALUE': comment}]
         bc += 1
     fxml.write(mtdcdb.mtdxml(myroot))
-    if len(pdata) > 0 or len(comment) > 0:
-        condXml = mtdcdb.root()
-        conditions = {barcode: [{'NAME': 'BATCH_INGOT',     'VALUE': pdata},
-                                {'NAME': 'OPERATORCOMMENT', 'VALUE': comment}]}
-        condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = runDict)
-        fxmlcond.write(mtdcdb.mtdxml(condXml))
+    condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = runDict)
+    fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 fxml.close()
 fxmlcond.close()
@@ -273,6 +276,7 @@ fxmlcond.close()
 if write:
     print('Transferring XML to the dbloader...', end = '')
     mtdcdb.writeToDB(filename = xmlfile, user = username)
+    mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username)
     print('done')
 
 mtdcdb.terminateSession(username)

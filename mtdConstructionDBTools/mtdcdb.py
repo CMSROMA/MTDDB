@@ -185,10 +185,6 @@ helpers to create conditions
 '''
 def newCondition(cmntroot, condition_name, condition_dataset, run,
                  runBegin = None, runEnd = None):
-    print('--------------')
-    print(run)
-    print('--------------')
-    print(f'{runBegin} {runEnd}')
     if cmntroot == None:
         cmntroot = root()
     if 'TYPE' in run.keys() and str(run['TYPE']) == None:
@@ -210,7 +206,6 @@ def newrun(condition, run = {}, begin = None, end = None):
         begin = now.strftime("%Y-%m-%d %H:%M:%S")
     if end == None:
         end = begin
-    print(f'{begin} {end}')
     if str(run['NAME']) != '':
         etree.SubElement(runElem, "RUN_NAME").text = run['NAME']
     if 'TYPE' in run.keys():
@@ -223,7 +218,7 @@ def newrun(condition, run = {}, begin = None, end = None):
         etree.SubElement(runElem, "COMMENT_DESCRIPTION").text = run['COMMENT']
     if str(run['LOCATION']) != '':
         etree.SubElement(runElem, "LOCATION").text = run['LOCATION']
-    if not 'user' in run or str(run['user']) == '':
+    if not 'USER' in run or str(run['USER']) == '':
         run['USER'] = getpass.getuser()
     etree.SubElement(runElem, "INITIATED_BY_USER").text = run['USER']    
     return runElem
