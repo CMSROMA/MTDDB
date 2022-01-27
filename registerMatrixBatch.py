@@ -288,7 +288,7 @@ for barcode in processedbarcodes:
                        '"select * from mtd_int2r.parts p where p.barcode = \'' +
                        barcode + '\'" -s 10', shell = True, stdout = subprocess.PIPE)
     print(barcode, end = ': ')
-    if barcode in str(r.stdout):
+    if barcode in str(r.stdout) or not write:
         print('Success')
     else:
         print('Failed')
