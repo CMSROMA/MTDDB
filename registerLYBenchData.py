@@ -126,11 +126,11 @@ for run in runSet:
                      {'NAME': 'SIGMA_T_NORM', 'VALUE': sigma_t_norm}]
         xdataset[barcode] = xdata
     #create the run    
-    run_dict = { 'name': run,
-                 'type': source,
-                 'number': -1,
-                 'comment': '',
-                 'location': 'Roma/' + source
+    run_dict = { 'NAME': run,
+                 'TYPE': source,
+                 'NUMBER': -1,
+                 'COMMENT': '',
+                 'LOCATION': 'Roma/' + source
         }
     # create the condition
     condName = 'LY XTALK'
