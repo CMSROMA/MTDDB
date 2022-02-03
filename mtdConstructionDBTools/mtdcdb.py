@@ -61,19 +61,23 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
                             filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' +
                             xmlfile])
-        for i in range(wait, 0, -1):
-            sys.stdout.write('File uploaded...waiting for completion...' + str(i)+'    \r')
-            sys.stdout.flush()
-            time.sleep(1)
-        print('File uploaded...waiting for completion...done')
+        print('File uploaded...waiting for completion...')
         l = 'This is a dry run'
         lst = ''
         if not dryrun:
-            cp = subprocess.run(['ssh', '-p',
-                                 str(port), user + '@localhost',
-                                 'cat /home/dbspool/logs/mtd/int2r/' +
-                                 xmlfile],
-                                stdout = PIPE)
+            # wait until the log appears
+            wait_until_log_appear = True
+            while wait_until_log_appear:
+                time.sleep(1)
+                cp = subprocess.run(['ssh', '-q', '-p', str(port), 
+                                     user + '@localhost', 'test', '-f', 
+                                     '/home/dbspool/logs/mtd/int2r/' + xmlfile, 
+                                     '&&', 'echo',  'Done!', '||', 'echo', '.', ';'], 
+                                    stdout = PIPE, stderr = PIPE)
+                testres = cp.stdout.decode("utf-8").strip()
+                print(testres[-1], end = '', flush = True)
+                if 'Done!' in testres:
+                    wait_until_log_appear = False                                
             # get the last line of the log file
             l = str(cp.stdout)
             ret = -1

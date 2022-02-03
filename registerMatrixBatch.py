@@ -259,7 +259,7 @@ elif barcode != '':
         if len(sbarcode) != 13:
             sbarcode = 'PRE{:010d}'.format(bc)            
         print(f'Registering matrix {sbarcode} of type {Xtaltype} made by producer {producer}')
-        myroot = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, 
+        parts = mtdcdb.mtdcreateMatrix(parts, sbarcode, Xtaltype, producer, batchIngot, 
                                         laboratory, multiplicity = multiplicity, user = username)
         processedbarcodes.append(sbarcode)
         if len(pdata) > 0 or len(comment) > 0:
