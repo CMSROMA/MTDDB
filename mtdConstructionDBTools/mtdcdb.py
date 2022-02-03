@@ -4,6 +4,7 @@ import sys
 import os
 import getpass
 import subprocess
+from subprocess import PIPE
 import re
 import time
 from datetime import datetime
@@ -72,7 +73,7 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
                                  str(port), user + '@localhost',
                                  'cat /home/dbspool/logs/mtd/int2r/' +
                                  xmlfile],
-                                capture_output = True)
+                                stdout = PIPE)
             # get the last line of the log file
             l = str(cp.stdout)
             ret = -1
