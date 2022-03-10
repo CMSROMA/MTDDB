@@ -55,3 +55,19 @@ SELECT CASE WHEN DISPLAY_NAME != 'singleBarCrystal' THEN
        ELSE
          SUM(NPARTS/16)
        END AS NPARTS FROM CONSTRUCT_PROGRESS GROUP BY DISPLAY_NAME;
+
+/* 
+   A histogram is a table with the following columns
+   id: the bins unique identifier for a given category
+   category: a string identifying the data collected
+   x: the bins' values
+   n: the counts
+   In order to obtain the id, one takes the value to be histogrammed and
+   divide it by a number C, taking a limited number of digits. The corresponding
+   x is obtained as the id times the number C
+*/
+CREATE VIEW HISTO AS
+SELECT ID, 'LY' AS CATEGORY, ID*100 as X, N FROM (
+       SELECT TO_CHAR(TRUNC(ly/100,2)) AS ID, COUNT(*) AS N
+              FROM CMS_MTD_TMING_COND.LY_XTALK GROUP BY TRUNC(ly/100,2)
+       ) ORDER BY ID;
