@@ -155,7 +155,7 @@ def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = 
 helpers to create specific parts 
 '''
 def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laboratory,
-                    serial = 'None', user = None, multiplicity = 16):
+                    serial = None, user = None, multiplicity = 16):
     # build the list of the attributes, if any
     attrs = []
     attr = {}
