@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SHIPMENTS>
+    <SHIPMENT>
+      <COMPANY_NAME>Marziale</COMPANY_NAME>
+      <TRACKING_NUMBER>12121965</TRACKING_NUMBER>
+      <STATUS>PACKAGING</STATUS> 
+      <PERSON>organtin</PERSON>
+      <DATE>2022-05-31</DATE>
+      <FROM_INSTITUTION>Roma</FROM_INSTITUTION>
+      <FROM_LOCATION>Roma1</FROM_LOCATION>
+      <TO_INSTITUTION>INFN-MIB</TO_INSTITUTION>      
+      <TO_LOCATION>Milano</TO_LOCATION> 
+<!--      <PAID_BY_INSTITUTION>INFN-RM1</PAID_BY_INSTITUTION> -->
+<!--      <FULL_ADDRESS>Via Torlonia 117</FULL_ADDRESS>-->
+      <ITEMS> 
+	<ITEM>
+<!--	  <REQUEST_NAME>fakeRequest</REQUEST_NAME>-->
+<!--	  <REQUEST_ID>980</REQUEST_ID>-->
+          <SHI_IS_PAID>F</SHI_IS_PAID>
+	  <PART>
+<!--	    <KIND_OF_PART>LYSOMatrix #3</KIND_OF_PART>-->
+	    <BARCODE>FK0000000001024</BARCODE>
+	  </PART> 
+	</ITEM> 
+      </ITEMS>
+    </SHIPMENT>
+  </SHIPMENTS>
+</ROOT>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <REQUESTS>
+    <REQUEST>
+      <NAME>fakeRequest</NAME>
+      <STATUS>OPEN</STATUS>
+      <PERSON>organtin</PERSON>
+      <DATE>2022-05-31</DATE> 
+      <INSTITUTION>INFN-MIB</INSTITUTION>
+      <LOCATION>Milano</LOCATION>
+      <ITEMS> 
+	<ITEM>
+	  <QUANTITY>1</QUANTITY>
+	  <KIND_OF_PART>LYSOMatrix #3</KIND_OF_PART>
+	</ITEM>
+      </ITEMS>
+    </REQUEST>
+  </REQUESTS>
+</ROOT>
