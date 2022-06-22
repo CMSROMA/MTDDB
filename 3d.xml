@@ -25,7 +25,6 @@
       <LMAXVAR_LN>template_LMAXVAR_LN</LMAXVAR_LN>
       <LMAXVAR_LS_STD>template_LMAXVAR_LS_STD</LMAXVAR_LS_STD>
       <LMAXVAR_LN_STD>template_LMAXVAR_LN_STD</LMAXVAR_LN_STD>
-      <L_STD_TOT>template_L_STD_TOT</L_STD_TOT>
       <L_MAX>template_L_MAX</L_MAX>
       <L_MEAN>template_L_MEAN</L_MEAN>
       <L_MEAN_STD>template_L_MEAN_STD</L_MEAN_STD>
@@ -33,7 +32,6 @@
       <WMAXVAR_LE>template_WMAXVAR_LE</WMAXVAR_LE>
       <WMAXVAR_LO_STD>template_WMAXVAR_LO_STD</WMAXVAR_LO_STD>
       <WMAXVAR_LE_STD>template_WMAXVAR_LE_STD</WMAXVAR_LE_STD>
-      <W_STD_TOT>template_W_STD_TOT</W_STD_TOT>
       <W_MAX>template_W_MAX</W_MAX>
       <W_MEAN>template_W_MEAN</W_MEAN>
       <W_MEAN_STD>template_W_MEAN_STD</W_MEAN_STD>
