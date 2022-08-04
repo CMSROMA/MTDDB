@@ -14,6 +14,7 @@ class MainWindow(QMainWindow):
         self.loadConfiguration()
         font = QFont('Arial', 12)
         self.setFont(font)
+        self.userWidgets = []
 
     def loadLastConfiguration(self):
         f = None
@@ -66,7 +67,16 @@ class ConstructionHelper(MainWindow):
         self.setCentralWidget(widget)
         
         self.restoreLastConfiguration()
-        
+
+    def restoreLastConfiguration(self):
+        lines = self.loadLastConfiguration()
+        if len(lines) >= len(self.userWidgets):
+            i = 0
+            for w in self.userWidgets:
+                w.setText(lines[i].replace('\n', ''))
+                w.displayText()
+                i += 1
+                
     def createButton(self, title, callback, color = 'white'):
         button = QPushButton(title)
         button.clicked.connect(callback)
@@ -89,6 +99,7 @@ class ConstructionHelper(MainWindow):
         le.setFixedWidth(13 * 12)
         le.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)        
         innerlayout.addWidget(le, alignment = QtCore.Qt.AlignmentFlag.AlignHCenter)
+        self.userWidgets.append(le)
         self.label = QLabel(self)
         self.label.setText(label)
         self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
@@ -98,9 +109,17 @@ class ConstructionHelper(MainWindow):
                 
     def save(self):
         print('[INFO] Saving...')
+        f = open('.lastsession', 'w')        
+        for w in self.userWidgets:
+            if w.text() == None:
+                w.setText('')
+            f.write(w.text() + '\n')
+        f.close()
         
     def clear(self):
         print('[INFO] Clear input...')
+        for w in self.userWidgets:
+            w.clear()
 
     def xml(self, bcodes = [], filename = '.none'):
         print('[INFO] Generating the XML...')
@@ -165,55 +184,3 @@ class ConstructionHelper(MainWindow):
     def build(self):
         return
 
-class BTLModule(ConstructionHelper):
-    def __init__(self):
-        super().__init__('BTLModule Assembly', 'Building a BTL module')
-
-    def restoreLastConfiguration(self):
-        lines = self.loadLastConfiguration()
-        if len(lines) >= 3:
-            self.leftSiPM.setText(lines[0].replace('\n', ''))
-            self.leftSiPM.displayText()
-            self.LYSOMatrix.setText(lines[1].replace('\n', ''))
-            self.LYSOMatrix.displayText()
-            self.rightSiPM.setText(lines[2].replace('\n', ''))
-            self.rightSiPM.displayText()
-        
-    def build(self):
-        self.leftSiPM = self.loadImage('Left SiPM Barcode', self.entry_layout, 'SiPM.jpg')
-        self.LYSOMatrix = self.loadImage('LYSOMatrix Barcode', self.entry_layout, 'LYSMatrix.png')
-        self.rightSiPM = self.loadImage('Right SiPM Barcode', self.entry_layout, 'SiPM.jpg')        
-
-    def clear(self):
-        super().clear()
-        self.leftSiPM.clear()
-        self.LYSOMatrix.clear()
-        self.rightSiPM.clear()
-
-    def save(self):
-        super().save()
-        f = open('.lastsession', 'w')
-        if self.leftSiPM.text() == None:
-            self.leftSiPM.setText('')
-        if self.rightSiPM.text() == None:
-            self.rightSiPM.setText('')
-        if self.LYSOMatrix.text() == None:
-            self.LYSOMatrix.setText('')
-        f.write(self.leftSiPM.text() + '\n')
-        f.write(self.LYSOMatrix.text() + '\n')
-        f.write(self.rightSiPM.text() + '\n')
-        f.close()
-        print('[INFO] Session saved')
-
-    def xml(self):
-        bcodes = [self.superPartBarcode.text(), self.leftSiPM.text(),
-                  self.LYSOMatrix.text(), self.rightSiPM.text()]
-        super().xml(bcodes, '.btlmodule.xml')
-        return
-
-app = QApplication(sys.argv)
-
-window = BTLModule()
-window.show()
-
-app.exec()
