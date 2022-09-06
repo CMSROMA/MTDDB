@@ -21,22 +21,24 @@ def opentunnel(user = None, port = 50022):
                     '-L', '8113:dbloader-mtd.cern.ch:8113',
                     user + '@lxplus.cern.ch'])
 
-def initiateSession(user = None, port = 50022):
+def initiateSession(user = None, port = 50022, write = False):
     if user == None:
         user = getpass.getuser()
-    try:
-        print('=== initiating session...')
-        subprocess.check_call(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
-    except subprocess.CalledProcessError:
-        opentunnel(user, port)
-        print('=== retrying to initiate a session...')
-        subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
+    if write:
+        try:
+            print('=== initiating session...')
+            subprocess.check_call(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
+        except subprocess.CalledProcessError:
+            opentunnel(user, port)
+            print('=== retrying to initiate a session...')
+            subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
 
-def terminateSession(user = None, port = 50022):
-    if user == None:
-        user = getpass.getuser()
-    print('=== terminating session...')
-    subprocess.run(['ssh', '-O', 'exit', '-p', str(port), user + '@localhost'])
+def terminateSession(user = None, port = 50022, write = False):
+    if write:
+        if user == None:
+            user = getpass.getuser()
+        print('=== terminating session...')
+        subprocess.run(['ssh', '-O', 'exit', '-p', str(port), user + '@localhost'])
     
 def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     print(f'Usage: {sys.argv[0]} [options]')
