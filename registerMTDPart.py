@@ -301,7 +301,7 @@ mtdcdb.terminateSession(username)
 # check the results using rhapi.py
 logger.info('Operation summary:')
 for barcode in processedbarcodes:
-    logger.debug(f'Checking {barcode}')
+    logger.info(f'Checking {barcode}')
     if write:
         r = subprocess.run('/usr/bin/python3 ./rhapi.py --url=http://localhost:8113  '
                            '"select * from mtd_int2r.parts p where p.barcode = \'' +
