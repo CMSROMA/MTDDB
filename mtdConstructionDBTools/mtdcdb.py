@@ -54,7 +54,7 @@ def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     exit(err)
 
 def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False,
-              user = None, wait = 10, tesdb = False):
+              user = None, wait = 10, testdb = False):
     dbname = 'cmsr'
     if filename != 'registerMatrixBatch.xml':
         if user == None:
@@ -64,7 +64,7 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             if testdb:
                 dbname = 'int2r'
             subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
-                            filename, user + '@localhost:/home/dbspool/spool/mtd/' + dbanem + '/' +
+                            filename, user + '@localhost:/home/dbspool/spool/mtd/' + dbname + '/' +
                             xmlfile])
         print('File uploaded...waiting for completion...')
         l = 'This is a dry run'
