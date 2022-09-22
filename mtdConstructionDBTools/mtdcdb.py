@@ -54,14 +54,17 @@ def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     exit(err)
 
 def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False,
-              user = None, wait = 10):
+              user = None, wait = 10, tesdb = False):
+    dbname = 'cmsr'
     if filename != 'registerMatrixBatch.xml':
         if user == None:
             user = getpass.getuser()
         if not dryrun:
             xmlfile = os.path.basename(filename)
+            if testdb:
+                dbname = 'int2r'
             subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
-                            filename, user + '@localhost:/home/dbspool/spool/mtd/cmsr/' +
+                            filename, user + '@localhost:/home/dbspool/spool/mtd/' + dbanem + '/' +
                             xmlfile])
         print('File uploaded...waiting for completion...')
         l = 'This is a dry run'
@@ -73,7 +76,7 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
                 time.sleep(1)
                 cp = subprocess.run(['ssh', '-q', '-p', str(port), 
                                      user + '@localhost', 'test', '-f', 
-                                     '/home/dbspool/logs/mtd/cmsr/' + xmlfile, 
+                                     '/home/dbspool/logs/mtd/' + dbname + '/' + xmlfile, 
                                      '&&', 'echo',  'Done!', '||', 'echo', '.', ';'], 
                                     stdout = PIPE, stderr = PIPE)
                 testres = cp.stdout.decode("utf-8").strip()
@@ -99,8 +102,8 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             print('    Please check using the web interface.')
             print('    to verify if data has been, at least partially, uploaded.')
             print('    You can even browse the whole log file using the following command')
-            print('    ssh -p 50022 <your-cern-username>@localhost cat /home/dbspool/logs/mtd/cmsr/' +
-                  filename)
+            print('    ssh -p 50022 <your-cern-username>@localhost cat /home/dbspool/logs/mtd/' + dbname +
+                  '/' + filename)
     else:
         print('*** ERR *** xml filename is mandatory. Cannot use the default one')
 

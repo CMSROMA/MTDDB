@@ -20,9 +20,9 @@ from mtdConstructionDBTools import mtdcdb
 
 PRODUCER_MAX = 12
 
-shrtOpts = 'hb:x:p:t:l:f:o:n:wu:d:c:s'
+shrtOpts = 'hb:x:p:t:l:f:o:n:wu:d:c:si'
 longOpts = ['help', 'batch=', 'barcode=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=', 'write', 'user=', 'data=', 'comment=', 'single']
+            'n=', 'write', 'user=', 'data=', 'comment=', 'single', 'int2r']
 helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'specify the barcode of the matrix',
             'specify the producer index [0 < index < {}]'.format(PRODUCER_MAX),
@@ -39,7 +39,8 @@ helpOpts = ['shows this help', 'specify the batch to which the matrix belongs',
             'the CERN username authorised to permanently write data to DB (default to current username)',
             'producer provided data to be associated to the part',
             'operator comments',
-            'register single crystals']
+            'register single crystals',
+            'use test db']
 
 hlp = ('Generates the XML file needed to register one or more LYSO matrices or\n' 
        'single crystal. If you provide a CSV file name, all the parts included\n'
@@ -70,6 +71,7 @@ username = None
 comment = ''
 pdata = ''
 multiplicity = 16
+int2r = False
 
 errors = 0
 
@@ -118,6 +120,8 @@ for o, a in opts:
         comment = a
     elif o in ('-s', '--single'):
         multiplicity = 0
+    elif o in ('-i', '--int2r'):
+        int2r = True
     else:
         assert False, 'unhandled option'
 
@@ -274,8 +278,8 @@ fxmlcond.close()
 
 if write:
     print('Transferring XML to the dbloader...', end = '')
-    mtdcdb.writeToDB(filename = xmlfile, user = username)
-    mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username)
+    mtdcdb.writeToDB(filename = xmlfile, user = username, testdb = int2r)
+    mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username, testdb = int2r)
     print('done')
 
 mtdcdb.terminateSession(username)
