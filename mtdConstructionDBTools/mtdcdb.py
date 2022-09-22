@@ -200,7 +200,10 @@ def newCondition(cmntroot, condition_name, condition_dataset, run,
     header = etree.SubElement(cmntroot, "HEADER")
     cond_type = etree.SubElement(header, "TYPE")
     etree.SubElement(cond_type, "NAME").text = condition_name
-    etree.SubElement(cond_type, "EXTENSION_TABLE_NAME").text = condition_name.replace(' ', '_')
+    extensionTableName = condition_name
+    if 'REGISTRATION' in condition_name:
+        extensionTableName = 'PART_REGISTRATION'
+    etree.SubElement(cond_type, "EXTENSION_TABLE_NAME").text = extensionTableName.replace(' ', '_')
     runElem = newrun(header, run, begin = runBegin, end = runEnd)
     header.append(runElem)
     addDataSet(cmntroot, condition_dataset)
