@@ -61,7 +61,7 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
         if not dryrun:
             xmlfile = os.path.basename(filename)
             subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
-                            filename, user + '@localhost:/home/dbspool/spool/mtd/int2r/' +
+                            filename, user + '@localhost:/home/dbspool/spool/mtd/cmsr/' +
                             xmlfile])
         print('File uploaded...waiting for completion...')
         l = 'This is a dry run'
@@ -73,7 +73,7 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
                 time.sleep(1)
                 cp = subprocess.run(['ssh', '-q', '-p', str(port), 
                                      user + '@localhost', 'test', '-f', 
-                                     '/home/dbspool/logs/mtd/int2r/' + xmlfile, 
+                                     '/home/dbspool/logs/mtd/cmsr/' + xmlfile, 
                                      '&&', 'echo',  'Done!', '||', 'echo', '.', ';'], 
                                     stdout = PIPE, stderr = PIPE)
                 testres = cp.stdout.decode("utf-8").strip()
@@ -96,10 +96,10 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
         else:
             print('*** ERR *** ' + l)
             print('(*) DB uploading can take time to complete. The above message is a guess.')
-            print('    Please check using the web interface https://cmsdcadev.cern.ch/mtd_int2r/')
+            print('    Please check using the web interface.')
             print('    to verify if data has been, at least partially, uploaded.')
             print('    You can even browse the whole log file using the following command')
-            print('    ssh -p 50022 <your-cern-username>@localhost cat /home/dbspool/logs/mtd/int2r/' +
+            print('    ssh -p 50022 <your-cern-username>@localhost cat /home/dbspool/logs/mtd/cmsr/' +
                   filename)
     else:
         print('*** ERR *** xml filename is mandatory. Cannot use the default one')

@@ -284,7 +284,7 @@ mtdcdb.terminateSession(username)
 print('Operation summary:')
 for barcode in processedbarcodes:
     r = subprocess.run('/usr/bin/python3 ./rhapi.py --url=http://localhost:8113  '
-                       '"select * from mtd_int2r.parts p where p.barcode = \'' +
+                       '"select * from mtd_cmsr.parts p where p.barcode = \'' +
                        barcode + '\'" -s 10', shell = True, stdout = subprocess.PIPE)
     print(barcode, end = ': ')
     if barcode in str(r.stdout) or not write:
