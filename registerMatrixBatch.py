@@ -229,6 +229,7 @@ if csvfile != None:
         ptype = 'matrix'
         if multiplicity == 0:
             ptype = 'bar'
+            partType = f'singleCrystal #{Xtaltype}'
         print(f'Registering {ptype} {barcode} of type {partType} made by producer {producer}', end = '')
         if serialNumber != None:
             print(f' (serial #: {serialNumber})')
@@ -286,9 +287,12 @@ mtdcdb.terminateSession(username)
 
 # check the results using rhapi.py
 print('Operation summary:')
+dbhandle = 'cmsr'
+if int2r:
+    dbhandle = 'int2r'
 for barcode in processedbarcodes:
-    r = subprocess.run('/usr/bin/python3 ./rhapi.py --url=http://localhost:8113  '
-                       '"select * from mtd_cmsr.parts p where p.barcode = \'' +
+    r = subprocess.run('python3 ./rhapi.py --url=http://localhost:8113  '
+                       '"select * from mtd_' + dbhandle + '.parts p where p.barcode = \'' +
                        barcode + '\'" -s 10', shell = True, stdout = subprocess.PIPE)
     print(barcode, end = ': ')
     if barcode in str(r.stdout) or not write:

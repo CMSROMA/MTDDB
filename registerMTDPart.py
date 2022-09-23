@@ -30,9 +30,9 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logginglevel = logging.INFO
 
-shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:D'
+shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:Di'
 longOpts = ['help', 'batch=', 'barcode=', 'serial=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=', 'write', 'user=', 'data=', 'comment=', 'debug']
+            'n=', 'write', 'user=', 'data=', 'comment=', 'debug', 'int2r']
 helpOpts = ['shows this help',
             'specify the batch to which the part belongs',
             'specify the barcode of the part',
@@ -52,7 +52,8 @@ helpOpts = ['shows this help',
             '         (default to current username)',
             'producer provided data to be associated to the part',
             'operator comments',
-            'activate debugging mode'
+            'activate debugging mode',
+            'use test database int2r'
             ]
 
 hlp = ('Generates the XML file needed to register one or more MTD parts.\n' 
@@ -86,6 +87,7 @@ comment = ''
 pdata = ''
 multiplicity = 16
 attrs = None
+database = 'cmsr'
 
 errors = 0
 
@@ -128,6 +130,8 @@ for o, a in opts:
         multiplicity = 0
     elif o in ('-D', '--debug'):
         logginglevel = logging.DEBUG
+    elif o in ('-i', '--int2r'):
+        database = 'int2r'
     else:
         assert False, 'unhandled option'
 
@@ -149,10 +153,10 @@ if len(pdata) > 0:
 if multiplicity > 1:
     logger.debug(f'    Multiplicity: {multiplicity}')
 if write:
-    logger.debug(f'Will write on DB')
+    logger.debug(f'Will write on DB {database}')
 else:
-    logger.debug(f'Will NOT write to DB')
-        
+    logger.debug(f'Will NOT write to DB {database}')
+
 # make basic checks
 if batchIngot == '':
     logger.error('batch/ingot information is mandatory. Please provide it')
@@ -245,11 +249,11 @@ if csvfile != None:
                               f'       the maximum allowed length is 40; it is {l}...exiting...')
                 mtdcdb.terminateSession(username)
                 exit(-1)
-        logger.info(f'Registering {barcode} of type {partType} made by producer {producer}', end = '')
+        loggerString = 'Registering {barcode} of type {partType} made by producer {producer}'
         if serialNumber != None:
-            logger.info(f' (serial #: {serialNumber})')
+            logger.info(loggerString + f' (serial #: {serialNumber})')
         else:
-            logger.info('\n')
+            logger.info(loggerString)
         partXML = part(barcode, partType, batch = batchIngot, attributes = attrs, user = username,
                        location = laboratory, manufacturer = producer, serial = serialNumber)
         processedbarcodes.append(barcode)
@@ -291,10 +295,15 @@ fxml.close()
 fxmlcond.close()
 
 if write:
-    logger.info('Transferring XML to the dbloader...', end = '')
-    mtdcdb.writeToDB(filename = xmlfile, user = username)
-    mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username)
-    logger.info('done')
+    logger.info(f'***** PLEASE RED *************************************')
+    logger.info(f'      You are about to write data on the DB {database}')
+    answer = input('      Are you sure? [y/N] ')
+    loggerString = ''
+    if answer in ('y', 'Y', 'yes', 'YES', 'Yes'):
+        loggerString = f'Transferring XML to the dbloader (using {database})...'
+#        mtdcdb.writeToDB(filename = xmlfile, user = username)
+#        mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username)
+    logger.info(loggerString + 'done')
 
 mtdcdb.terminateSession(username)
 
@@ -303,20 +312,20 @@ logger.info('Operation summary:')
 for barcode in processedbarcodes:
     logger.info(f'Checking {barcode}')
     if write:
-        r = subprocess.run('/usr/bin/python3 ./rhapi.py --url=http://localhost:8113  '
-                           '"select * from mtd_int2r.parts p where p.barcode = \'' +
+        r = subprocess.run('python3 ./rhapi.py --url=http://localhost:8113  '
+                           '"select * from mtd_' + database + '.parts p where p.barcode = \'' +
                            barcode + '\'" -s 10', shell = True, stdout = subprocess.PIPE)
         status = 'Fail'
-        if barcode in str(r.stdout) or not write:
+        if barcode in str(r.stdout):
             status = 'Success'
         logger.info(f'{barcode}:  {status}')
     else:
         logger.debug('No write required -> no checking')
 
-
 logger.debug('XML file content ========================================')
-with open(xmlfile, 'r') as f:
-    logger.debug(f.read())
+if logginglevel == logging.DEBUG:
+    with open(xmlfile, 'r') as f:
+        print(f.read())
 
 exit(0)
 
