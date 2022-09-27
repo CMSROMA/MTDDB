@@ -301,6 +301,6 @@ def addVisualInspectionComment(cmntroot, barcode, comment = '', location = None,
                                    {"name": "BATCH_INGOT_DATA","value": pdata}]
     }
     run = { 'type': 'VISUAL_INSPECTION' }
-    aComment = newCondition(cmntroot, 'XTALREGISTRATION', conditionDataset,
+    aComment = newCondition(cmntroot, 'PARTREGISTRATION', conditionDataset,
                             run_type = 'VISUAL_INSPECTION', location = location,
                             comment = description)

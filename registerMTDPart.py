@@ -110,7 +110,7 @@ for o, a in opts:
                  'ETROC']:
             partType = a
     elif o in ('-l', '--lab'):
-        if a in ['Roma', 'Milano', 'UVA', 'Caltech', 'CERN']: 
+        if a in ['Roma', 'Milano', 'UVA', 'Caltech', 'CERN', 'Nebraska']: 
             laboratory = a
     elif o in ('-o', '--output'):
         xmlfile = a
@@ -286,7 +286,9 @@ elif barcode != '':
         if len(pdata) > 0 or len(comment) > 0:
             conditions[sbarcode] = [{'NAME': 'BATCH_INGOT_DATA', 'VALUE': pdata},
                                     {'NAME': 'OPERATORCOMMENT',  'VALUE': comment}]
-        bc += 1
+        bcnums = list([c for c in bc if c.isnumeric()])
+        bcnum = "".join(bcnums)
+        bc = bc.replace(bcnum, str(int(bcnum) + 1))
     fxml.write(mtdcdb.mtdxml(myroot))
     condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = runDict) # check
     fxmlcond.write(mtdcdb.mtdxml(condXml))
@@ -301,8 +303,8 @@ if write:
     loggerString = ''
     if answer in ('y', 'Y', 'yes', 'YES', 'Yes'):
         loggerString = f'Transferring XML to the dbloader (using {database})...'
-#        mtdcdb.writeToDB(filename = xmlfile, user = username)
-#        mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username)
+        mtdcdb.writeToDB(filename = xmlfile, user = username)
+        mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username)
     logger.info(loggerString + 'done')
 
 mtdcdb.terminateSession(username)
