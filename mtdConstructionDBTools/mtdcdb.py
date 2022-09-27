@@ -63,9 +63,10 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             xmlfile = os.path.basename(filename)
             if testdb:
                 dbname = 'int2r'
-            subprocess.run(['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
-                            filename, user + '@localhost:/home/dbspool/spool/mtd/' + dbname + '/' +
-                            xmlfile])
+            cmd = ['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
+                   filename, user + '@localhost:/home/dbspool/spool/mtd/' + dbname + '/' +
+                   xmlfile]
+            subprocess.run(cmd)
         print('File uploaded...waiting for completion...')
         l = 'This is a dry run'
         lst = ''
@@ -80,9 +81,13 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
                                      '&&', 'echo',  'Done!', '||', 'echo', '.', ';'], 
                                     stdout = PIPE, stderr = PIPE)
                 testres = cp.stdout.decode("utf-8").strip()
-                print(testres[-1], end = '', flush = True)
-                if 'Done!' in testres:
-                    wait_until_log_appear = False                                
+                if len(testres) > 0:
+                    print(testres[-1], end = '', flush = True)
+                    if 'Done!' in testres:
+                        wait_until_log_appear = False
+                else:
+                    print('Waiting for the log file to appear...')
+                    time.sleep(5)
             # get the last line of the log file
             l = str(cp.stdout)
             ret = -1

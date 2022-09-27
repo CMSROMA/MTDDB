@@ -89,6 +89,8 @@ multiplicity = 16
 attrs = None
 database = 'cmsr'
 
+laboratories = ['Roma', 'Milano', 'UVA', 'Caltech', 'CERN', 'Nebraska']
+
 errors = 0
 
 for o, a in opts:
@@ -110,7 +112,7 @@ for o, a in opts:
                  'ETROC']:
             partType = a
     elif o in ('-l', '--lab'):
-        if a in ['Roma', 'Milano', 'UVA', 'Caltech', 'CERN', 'Nebraska']: 
+        if a in laboratories:
             laboratory = a
     elif o in ('-o', '--output'):
         xmlfile = a
@@ -140,6 +142,7 @@ logger.debug(f'Debugging mode ON')
 logger.debug(f'output on {xmlfile}')
 logger.debug(f'Registering part of type: {partType}')
 logger.debug(f'Apparently you are in {g.city}')
+logger.debug(f'Setting lab to {laboratory}')
 logger.debug(f'        Username: {username}')
 logger.debug(f'           Batch: {batchIngot}')
 logger.debug(f'         Barcode: {barcode}')
@@ -182,6 +185,10 @@ if producer == '' and csvfile == None:
     logger.error('producer information is mandatory. Please provide it')
     errors += 1
 
+if laboratory not in laboratories:
+    logger.error(f'laboratory {laboratory} not found in the list of valid locations')
+    errors += 1
+    
 if errors != 0:
     mtdcdb.mtdhelp(shrtOpts, longOpts, helpOpts, -2, hlp)
 
@@ -202,7 +209,7 @@ parts = etree.SubElement(myroot, "PARTS")
 
 import pandas as pd
 
-mtdcdb.initiateSession(username)
+mtdcdb.initiateSession(username, write = write)
 
 processedbarcodes = []
 
