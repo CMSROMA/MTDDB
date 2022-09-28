@@ -153,7 +153,7 @@ def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = 
     location = etree.SubElement(part, "LOCATION").text = location
     if batch != None and len(batch) > 0:
         batchIngot = etree.SubElement(part, "BATCH_NUMBER").text = str(batch)
-    if manufacturer != None:
+    if manufacturer != None and manufacturer.isnumeric():
         manufacturer = etree.SubElement(part, "MANUFACTURER").text = 'Producer_' + str(manufacturer)
     predefined_attributes = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
     if attributes != None:
@@ -309,3 +309,8 @@ def addVisualInspectionComment(cmntroot, barcode, comment = '', location = None,
     aComment = newCondition(cmntroot, 'PARTREGISTRATION', conditionDataset,
                             run_type = 'VISUAL_INSPECTION', location = location,
                             comment = description)
+
+def allowedTypes():
+    aTypes = ['singleBarCrystal', 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',
+              'LYSOMatrix #1', 'LYSOMatrix #2', 'LYSOMatrix #3']
+    return aTypes

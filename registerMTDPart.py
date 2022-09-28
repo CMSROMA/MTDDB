@@ -297,7 +297,7 @@ elif barcode != '':
         bcnum = "".join(bcnums)
         bc = bc.replace(bcnum, str(int(bcnum) + 1))
     fxml.write(mtdcdb.mtdxml(myroot))
-    condXml = mtdcdb.newCondition(condXml, 'XTALREGISTRATION', conditions, run = runDict) # check
+    condXml = mtdcdb.newCondition(condXml, 'PART_REGISTRATION', conditions, run = runDict) # check
     fxmlcond.write(mtdcdb.mtdxml(condXml))
 
 fxml.close()
@@ -309,9 +309,16 @@ if write:
     answer = input('      Are you sure? [y/N] ')
     loggerString = ''
     if answer in ('y', 'Y', 'yes', 'YES', 'Yes'):
-        loggerString = f'Transferring XML to the dbloader (using {database})...'
-        mtdcdb.writeToDB(filename = xmlfile, user = username)
-        mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username)
+        if type not in mtdcdb.allowedTypes() and database == 'cmsr':
+            loggerString = f'Not allowed: you requested to register a part of type {type} '.join(
+                f'to {database}, and this is not allowed. Skipping...')
+        else:
+            loggerString = f'Transferring XML to the dbloader (using {database})...'
+            tb = False
+            if database == 'int2r':
+                tb = True
+            mtdcdb.writeToDB(filename = xmlfile, user = username, testdb = tb)
+            mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username, testdb = tb)
     logger.info(loggerString + 'done')
 
 mtdcdb.terminateSession(username)
