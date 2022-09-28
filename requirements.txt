@@ -1,0 +1,21 @@
+The following python modules are used (those with a * should be installed by default):
+
+lxml
+* random
+* getpass
+* sys
+* os
+* subprocess
+* getopt
+* re
+requests
+* json
+* xml
+* importlib
+urllib3
+
+To install them you can use
+
+pip3 install lxml requests urllib3
+
+
