@@ -1,6 +1,7 @@
 The following python modules are used (those with a * should be installed by default):
 
 lxml
+* numbers
 * random
 * getpass
 * sys
