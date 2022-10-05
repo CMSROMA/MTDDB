@@ -9,6 +9,7 @@ MTD database. For information about how to use it, just run it.
 
 '''
 from lxml import etree
+import numbers
 import random
 import getpass
 import sys
@@ -293,9 +294,10 @@ elif barcode != '':
         if len(pdata) > 0 or len(comment) > 0:
             conditions[sbarcode] = [{'NAME': 'BATCH_INGOT_DATA', 'VALUE': pdata},
                                     {'NAME': 'OPERATORCOMMENT',  'VALUE': comment}]
-        bcnums = list([c for c in bc if c.isnumeric()])
-        bcnum = "".join(bcnums)
-        bc = bc.replace(bcnum, str(int(bcnum) + 1))
+        if not isinstance(bc, numbers.Number):
+            bcnums = list([c for c in bc if c.isnumeric()])
+            bcnum = "".join(bcnums)
+            bc = bc.replace(bcnum, str(int(bcnum) + 1))            
     fxml.write(mtdcdb.mtdxml(myroot))
     condXml = mtdcdb.newCondition(condXml, 'PART_REGISTRATION', conditions, run = runDict) # check
     fxmlcond.write(mtdcdb.mtdxml(condXml))
