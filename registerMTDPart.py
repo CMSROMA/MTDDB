@@ -238,7 +238,7 @@ def createPart(partType, barcode, producer, batchIngot, username, laboratory,
         conditions[barcode] = [{'NAME': 'BATCH_INGOT_DATA', 'VALUE': pdata},
                                {'NAME': 'OPERATORCOMMENT', 'VALUE': comment}                               
         ]
-        condXML = mtdcdb.newCondition(condXml, 'PARTREGISTRATION', conditions, run = runDict);
+        condXML = mtdcdb.newCondition(condXml, 'PART_REGISTRATION', conditions, run = runDict);
     partXML = mtdcdb.part(barcode, partType, batch = batchIngot, attributes = attrs, user = username,
                           location = laboratory, manufacturer = producer, serial = serialNumber)
     # special treatment for parts composed by subrparts
