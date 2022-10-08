@@ -18,11 +18,17 @@ import subprocess
 import getopt
 import re
 import logging
+import pandas as pd
 from mtdConstructionDBTools import mtdcdb
-
 import geocoder
-g = geocoder.ip('me')
 
+# set constants
+laboratories = ['Roma', 'Nebraska']
+allowedParts = ['LYSOMatrix #1', 'LYSOMatrix #2', 'LYSOMatrix #3',
+                'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',
+                'ETROC']
+
+# configure logger
 logger = logging.getLogger(os.path.basename(__file__))
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -31,6 +37,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logginglevel = logging.INFO
 
+# get command line options
 shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:Di'
 longOpts = ['help', 'batch=', 'barcode=', 'serial=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
             'n=', 'write', 'user=', 'data=', 'comment=', 'debug', 'int2r']
@@ -73,12 +80,14 @@ except Exception as excptn:
     print("Unexpected exception: " + str(excptn))
     mtdcdb.mtdhelp(shrtOpts, longOpts, helpOpts, -1, hlp)
 
+# set defaults
 batchIngot = ''
 barcode = ''
 serialNumber = None
 producer = ''
 partType = ''
 csvfile = None
+g = geocoder.ip('me')
 laboratory = g.city
 xmlfile = os.path.basename(sys.argv[0]).replace('.py', '.xml')
 nbarcodes = 1
@@ -89,8 +98,7 @@ pdata = ''
 multiplicity = 16
 attrs = None
 database = 'cmsr'
-
-laboratories = ['Roma', 'Milano', 'UVA', 'Caltech', 'CERN', 'Nebraska']
+nn = 1
 
 errors = 0
 
@@ -108,13 +116,10 @@ for o, a in opts:
     elif o in ('-p', '--producer'):
         producer = a
     elif o in ('-t', '--type'):
-        if a in ['LYSOMatrix #1', 'LYSOMatrix #2', 'LYSOMatrix #3',
-                 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',
-                 'ETROC']:
+        if a in allowedParts:
             partType = a
     elif o in ('-l', '--lab'):
-        if a in laboratories:
-            laboratory = a
+        laboratory = a
     elif o in ('-o', '--output'):
         xmlfile = a
     elif o in ('-n', '--n'):
@@ -138,6 +143,7 @@ for o, a in opts:
     else:
         assert False, 'unhandled option'
 
+# running conditions
 logger.setLevel(logginglevel)
 logger.debug(f'Debugging mode ON')
 logger.debug(f'output on {xmlfile}')
@@ -171,7 +177,8 @@ if barcode == '' and csvfile == None:
     errors += 1
 
 if barcode != '' and csvfile == None and (producer == '' or partType == ''):
-    logger.error('providing a barcode, requires to provide a producer, too, as well as a type')
+    logger.error('providing a barcode, requires to provide a producer, too, as well as a type.' +
+                 'If you got this error, it is possible that you mistyped the type')
     errors += 1    
 
 if barcode != '' and csvfile != None:
@@ -193,22 +200,20 @@ if laboratory not in laboratories:
 if errors != 0:
     mtdcdb.mtdhelp(shrtOpts, longOpts, helpOpts, -2, hlp)
 
-# check if output file exists
 if os.path.exists(xmlfile):
     logger.error(f'XML {xmlfile} file already exists.\n' +
                  '                             Please rename or remove it before proceeding')
     exit(-1)
-    
+
+# open output files
 fxml = open(xmlfile, "w")
 fxmlcond = open('cond-' + xmlfile, "w")
 conditions = {}
 condXml = None
 
-# the root XML document containing parts
+# create the root XML document containing parts
 myroot = mtdcdb.root()
 parts = etree.SubElement(myroot, "PARTS")
-
-import pandas as pd
 
 mtdcdb.initiateSession(username, write = write)
 
@@ -219,6 +224,62 @@ runDict = { 'NAME': 'VISUAL_INSPECTION',
             'USER': username
         }
 
+def createPart(partType, barcode, producer, batchIngot, username, laboratory,
+               serialNumber = None, attrs = None, comment = None, pdata = None, condXml = None):
+    '''
+    process data to create the part XML
+    '''
+    if comment == "nan":
+        comment = ''
+    if pdata == "nan":
+        pdata = ''
+    condXML = None
+    if len(pdata) > 0 or len(comment) > 0:
+        conditions[barcode] = [{'NAME': 'BATCH_INGOT_DATA', 'VALUE': pdata},
+                               {'NAME': 'OPERATORCOMMENT', 'VALUE': comment}                               
+        ]
+        condXML = mtdcdb.newCondition(condXml, 'PARTREGISTRATION', conditions, run = runDict);
+    partXML = mtdcdb.part(barcode, partType, batch = batchIngot, attributes = attrs, user = username,
+                          location = laboratory, manufacturer = producer, serial = serialNumber)
+    # special treatment for parts composed by subrparts
+    if 'LYSOMatrix' in partType:
+        singlextal = etree.SubElement(partXML, "CHILDREN")        
+        for i in range(16):
+            partSubType = 'singleBarCrystal'
+            singlextal.append(mtdcdb.part(f'{barcode}-{i}', partSubType, batch = batchIngot, user = username,
+                                  location = laboratory, manufacturer = producer, serial = serialNumber))
+        partXML.append(singlextal)
+    return partXML, condXML
+
+def formatSerialNumber(serialNumber):
+    '''
+    normalise serial number format
+    '''
+    if len(serialNumber) == 0 or serialNumber == 'nan':
+        serialNumber = None
+    if serialNumber != None and len(serialNumber) > 40:
+        l = len(serialNumber)
+        logger.error(f'Serial number {serialNumber} for part {barcode} too long\n' + 
+                     f'       the maximum allowed length is 40; it is {l}...exiting...')
+        mtdcdb.terminateSession(username)
+        exit(-1)
+    return serialNumber
+
+def formatBarcode(barcode, i = 0):
+    '''
+    preprocess barcode
+    '''
+    try:
+        bc = int(barcode) + i
+        sbarcode = str(bc)
+        if len(sbarcode) != 13:
+            sbarcode = 'PRE{:010d}'.format(bc)            
+    except ValueError:
+        logger.error('barcode must be an integer or have a length of 13')
+        mtdcdb.terminateSession(username)
+        exit(-1)        
+    return sbarcode
+    
 # processing CSV file 
 if csvfile != None:
     parts = pd.read_csv(csvfile, sep = None, engine = 'python')
@@ -231,77 +292,35 @@ if csvfile != None:
 
     for index, row in parts.iterrows():    
         partType = row['type'].strip()
-        barcode = 'PRE{:010d}'.format(int(row['barcode'])) # check
+        barcode = formatBarcode(row['barcode'])
         producer = row['producer']
         comment = str(row['comments'])
-        if 'pdata' in parts.columns: 
-            pdata = str(row['pdata'])
-        if condXml == None:
-            condXml = mtdcdb.root()
-        if comment == "nan":
-            comment = ''
-        if pdata == "nan":
-            pdata = ''
-        if len(pdata) > 0 or len(comment) > 0:
-            conditions[barcode] = [{'NAME': 'BATCH_INGOT_DATA', 'VALUE': pdata},
-                                   {'NAME': 'OPERATORCOMMENT', 'VALUE': comment}
-            ]
+        pdata = row['pdata']
         serialNumber = None
-        if 'serialnumber' in parts.columns:
-            serialNumber = str(row['serialnumber']).strip()
-            if len(serialNumber) == 0 or serialNumber == 'nan':
-                serialNumber = None
-            if serialNumber != None and len(serialNumber) > 40:
-                l = len(serialNumber)
-                logger.error(f'Serial number {serialNumber} for part {barcode} too long\n' + 
-                              f'       the maximum allowed length is 40; it is {l}...exiting...')
-                mtdcdb.terminateSession(username)
-                exit(-1)
         loggerString = 'Registering {barcode} of type {partType} made by producer {producer}'
-        if serialNumber != None:
-            logger.info(loggerString + f' (serial #: {serialNumber})')
-        else:
-            logger.info(loggerString)
-        partXML = part(barcode, partType, batch = batchIngot, attributes = attrs, user = username,
-                       location = laboratory, manufacturer = producer, serial = serialNumber)
+        if 'serialnumber' in parts.columns:
+            serialNumber = formatSerialNumber(str(row['serialnumber']).strip())
+            loggerString += f' (serial #: {serialNumber})'
+        logger.info(loggerString)
+        partXML, condXML = createPart(partType, barcode, producer, batchIngot, username, laboratory,
+                                      serialNumber = serialNumber, attrs = attrs, comment = comment,
+                                      pdata = pdata)
         processedbarcodes.append(barcode)
 
-    fxml.write(mtdcdb.mtdxml(myroot))
-    if condXml != None:
-        condXml = mtdcdb.newCondition(condXml, 'PARTREGISTRATION', conditions, run = runDict); # check
-        fxmlcond.write(mtdcdb.mtdxml(condXml))
-
 elif barcode != '':
-    bc = barcode
-    if len(barcode) != 13:
-        try:
-            bc = int(barcode)
-        except ValueError:
-            logger.error('barcode must be an integer or have a length of 13')
-            mtdcdb.terminateSession(username)
-            exit(-1)
     condXml = mtdcdb.root()
     # processing parts with given name
     for i in range(nbarcodes):
-        sbarcode = str(bc)
-        if len(sbarcode) != 13:
-            sbarcode = 'PRE{:010d}'.format(bc)            
+        sbarcode = formatBarcode(barcode, i)
         logger.info(f'Registering {sbarcode} of type {partType} made by producer {producer}')
-        partxml = mtdcdb.part(sbarcode, partType, batch = batchIngot, attributes = attrs, user = username,
-                              location = laboratory, manufacturer = producer, serial = serialNumber)
-        parts.append(partxml)
+        partXML, condXML = createPart(partType, sbarcode, producer, batchIngot, username, laboratory,
+                                      serialNumber = serialNumber, attrs = attrs, comment = comment,
+                                      pdata = pdata)
+        parts.append(partXML)
         processedbarcodes.append(sbarcode)
-        if len(pdata) > 0 or len(comment) > 0:
-            conditions[sbarcode] = [{'NAME': 'BATCH_INGOT_DATA', 'VALUE': pdata},
-                                    {'NAME': 'OPERATORCOMMENT',  'VALUE': comment}]
-        if not isinstance(bc, numbers.Number):
-            bcnums = list([c for c in bc if c.isnumeric()])
-            bcnum = "".join(bcnums)
-            bc = bc.replace(bcnum, str(int(bcnum) + 1))            
-    fxml.write(mtdcdb.mtdxml(myroot))
-    condXml = mtdcdb.newCondition(condXml, 'PART_REGISTRATION', conditions, run = runDict) # check
-    fxmlcond.write(mtdcdb.mtdxml(condXml))
-
+        
+fxml.write(mtdcdb.mtdxml(myroot))
+fxmlcond.write(mtdcdb.mtdxml(condXML))
 fxml.close()
 fxmlcond.close()
 

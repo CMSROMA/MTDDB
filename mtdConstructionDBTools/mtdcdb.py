@@ -154,7 +154,8 @@ def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = 
     if batch != None and len(batch) > 0:
         batchIngot = etree.SubElement(part, "BATCH_NUMBER").text = str(batch)
     if manufacturer != None and manufacturer.isnumeric():
-        manufacturer = etree.SubElement(part, "MANUFACTURER").text = 'Producer_' + str(manufacturer)
+        manufacturer = 'Producer_' + str(manufacturer)        
+    manufacturer = etree.SubElement(part, "MANUFACTURER").text = manufacturer 
     predefined_attributes = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
     if attributes != None:
         for attr in attributes:
