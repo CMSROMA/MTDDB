@@ -330,7 +330,7 @@ if write:
     answer = input('      Are you sure? [y/N] ')
     loggerString = ''
     if answer in ('y', 'Y', 'yes', 'YES', 'Yes'):
-        if type not in mtdcdb.allowedTypes() and database == 'cmsr':
+        if partType not in mtdcdb.allowedTypes() and database == 'cmsr':
             loggerString = f'Not allowed: you requested to register a part of type {type} '.join(
                 f'to {database}, and this is not allowed. Skipping...')
         else:
