@@ -17,18 +17,23 @@ def opentunnel(user = None, port = 50022):
     if user == None:
         user = getpass.getuser()
     print('    need to open a tunnel...')
-    subprocess.run(['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22', 
-                    '-L', '8113:dbloader-mtd.cern.ch:8113',
-                    user + '@lxplus.cern.ch'])
+    retval = subprocess.run(['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22', 
+                             '-L', '8113:dbloader-mtd.cern.ch:8113',
+                             user + '@lxplus.cern.ch'])
+    if retval.returncode == 255:
+        print('*** ERR *** Cannot open tunnel -- exiting...')
+        exit(-1)
 
 def initiateSession(user = None, port = 50022, write = False):
     if user == None:
         user = getpass.getuser()
     if write:
+        proc = None
         try:
             print('=== initiating session...')
-            subprocess.check_call(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
-        except subprocess.CalledProcessError:
+            proc = subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'],
+                                  check = True)
+        except subprocess.CalledProcessError as err:
             opentunnel(user, port)
             print('=== retrying to initiate a session...')
             subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
