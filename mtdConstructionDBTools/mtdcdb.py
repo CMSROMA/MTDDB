@@ -320,3 +320,32 @@ def allowedTypes():
     aTypes = ['singleBarCrystal', 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',
               'LYSOMatrix #1', 'LYSOMatrix #2', 'LYSOMatrix #3']
     return aTypes
+
+def addAttributeToPart(barcode, attrs, user = None):
+    myroot = root()
+    parts = etree.SubElement(myroot, 'PARTS')
+    part = etree.SubElement(parts, 'PART')
+    barcode = etree.SubElement(part, "BARCODE").text = barcode
+    if user == None:
+        user = getpass.getuser()    
+    record_insertion = etree.SubElement(part, "RECORD_INSERTION_USER").text = user
+    predefAttrs = etree.SubElement(part, "PREDEFINED_ATTRIBUTES")
+    for name, value in attrs.items():
+        attr = etree.SubElement(predefAttrs, "ATTRIBUTE")
+        attrName = etree.SubElement(attr, "NAME").text = name
+        attrValue = etree.SubElement(attr, "VALUE").text = value
+    return myroot
+
+def reject(barcode):
+    path = '/tmp/' + str(time.time()) + '.xml'
+    xmlfile = open(path, 'w')
+    attrs = {
+        'Global Status': 'Rejected'
+        }
+    xml = addAttributeToPart(barcode, attrs)
+    xmlfile.write(mtdxml(xml))
+    xmlfile.close()
+#    writeToDB(filename = path)
+    os.remove(path)
+    return xml
+
