@@ -23,7 +23,7 @@ from mtdConstructionDBTools import mtdcdb
 import geocoder
 
 # set constants
-laboratories = ['Roma', 'Nebraska']
+laboratories = ['Roma', 'Nebraska', 'VirtualLab']
 allowedParts = ['LYSOMatrix #1', 'LYSOMatrix #2', 'LYSOMatrix #3',
                 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',
                 'ETROC']
@@ -38,9 +38,9 @@ logger.addHandler(ch)
 logginglevel = logging.INFO
 
 # get command line options
-shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:Di'
+shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:DiP:a:'
 longOpts = ['help', 'batch=', 'barcode=', 'serial=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=', 'write', 'user=', 'data=', 'comment=', 'debug', 'int2r']
+            'n=', 'write', 'user=', 'data=', 'comment=', 'debug', 'int2r', 'prefix=', 'attrs=']
 helpOpts = ['shows this help',
             'specify the batch to which the part belongs',
             'specify the barcode of the part',
@@ -61,7 +61,12 @@ helpOpts = ['shows this help',
             'producer provided data to be associated to the part',
             'operator comments',
             'activate debugging mode',
-            'use test database int2r'
+            'use test database int2r',
+            'set the prefix to be used when creating the barcode (default PRE)',
+            'assign predefined attributes: attributes must be specified as a dictionary like\n' +
+            '                         [{"NAME": "attr name", "VALUE": "attr value"},\n' +
+            '                          {"NAME": "another name", "VALUE": "another value"}]\n' +
+            '                         double quotes are mandatory'
             ]
 
 hlp = ('Generates the XML file needed to register one or more MTD parts.\n' 
@@ -99,6 +104,7 @@ multiplicity = 16
 attrs = None
 database = 'cmsr'
 nn = 1
+prefix = 'PRE'
 
 errors = 0
 
@@ -140,6 +146,10 @@ for o, a in opts:
         logginglevel = logging.DEBUG
     elif o in ('-i', '--int2r'):
         database = 'int2r'
+    elif o in ('-P', '--prefix'):
+        prefix = a
+    elif o in ('-a', '--attrs'):
+        attrs = a
     else:
         assert False, 'unhandled option'
 
@@ -273,7 +283,8 @@ def formatBarcode(barcode, i = 0):
         bc = int(barcode) + i
         sbarcode = str(bc)
         if len(sbarcode) != 13:
-            sbarcode = 'PRE{:010d}'.format(bc)            
+            lPref = 13-len(prefix)
+            sbarcode = f'{prefix}{bc:0{lPref}d}'            
     except ValueError:
         logger.error('barcode must be an integer or have a length of 13')
         mtdcdb.terminateSession(username)
@@ -325,7 +336,7 @@ fxml.close()
 fxmlcond.close()
 
 if write:
-    logger.info(f'***** PLEASE RED *************************************')
+    logger.info(f'***** PLEASE READ *************************************')
     logger.info(f'      You are about to write data on the DB {database}')
     answer = input('      Are you sure? [y/N] ')
     loggerString = ''
