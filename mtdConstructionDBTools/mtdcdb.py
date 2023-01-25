@@ -20,7 +20,7 @@ def opentunnel(user = None, port = 50022):
     print('    need to open a tunnel...')
     retval = subprocess.run(['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22', 
                              '-L', '8113:dbloader-mtd.cern.ch:8113',
-                             user + '@lxplus.cern.ch'])
+                             user + '@lxtunnel.cern.ch'])
     if retval.returncode == 255:
         print('*** ERR *** Cannot open tunnel -- exiting...')
         exit(-1)
