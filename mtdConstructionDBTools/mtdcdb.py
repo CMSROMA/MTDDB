@@ -1,5 +1,6 @@
 from lxml import etree
 import lxml.objectify
+import json
 import sys
 import os
 import getpass
@@ -136,8 +137,11 @@ def transfer(xml, filename = None, dryrun = False, user = None):
     
 def mtdxml(root):
     # print xml
-    return etree.tostring(root, encoding='UTF-8', standalone = 'yes', xml_declaration=True,
-                          pretty_print=True).decode("utf-8")
+    ret = ''
+    if root != None:
+        ret = etree.tostring(root, encoding='UTF-8', standalone = 'yes', xml_declaration=True,
+                             pretty_print=True).decode("utf-8")
+    return ret
 
 def attribute(parent, name, value):
     attribute = etree.SubElement(parent, "ATTRIBUTE")
@@ -163,8 +167,13 @@ def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = 
     manufacturer = etree.SubElement(part, "MANUFACTURER").text = manufacturer 
     predefined_attributes = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
     if attributes != None:
-        for attr in attributes:
-            attribute(predefined_attributes, attr['NAME'], attr['VALUE'])
+        jattributes = []
+        if isinstance(attributes, str):
+            jattributes = json.loads(attributes)
+        for d in jattributes:
+            for key,value in d.items():
+                print(f'{key} --> {value}')
+                attribute(predefined_attributes, key, value)
     return part
 
 '''
