@@ -36,7 +36,7 @@ def initiateSession(user = None, port = 50022, write = False):
         user = getpass.getuser()
     if write:
         proc = None
-        if isTunnelOpen():
+        if not isTunnelOpen():
             opentunnel(user, port)
 
 def terminateSession(user = None, port = 50022, write = False):
