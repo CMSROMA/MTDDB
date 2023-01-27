@@ -26,7 +26,7 @@ def opentunnel(user = None, port = 50022):
         print('    need to open a tunnel...')
         retval = subprocess.run(['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22', 
                                  '-L', '8113:dbloader-mtd.cern.ch:8113',
-                                 user + '@lxtunnel.cern.ch'])
+                                 'mtdloadb@lxtunnel.cern.ch'])
         if retval.returncode == 255:
             print('*** ERR *** Cannot open tunnel -- exiting...')
             exit(-1)
@@ -43,8 +43,6 @@ def terminateSession(user = None, port = 50022, write = False):
     if write:
         if user == None:
             user = getpass.getuser()
-        print('=== terminating session...')
-        subprocess.run(['ssh', '-O', 'exit', '-p', str(port), user + '@localhost'])
     
 def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     print(f'Usage: {sys.argv[0]} [options]')
@@ -69,9 +67,8 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             xmlfile = os.path.basename(filename)
             if testdb:
                 dbname = 'int2r'
-            cmd = ['scp', '-P', str(port), '-oNoHostAuthenticationForLocalhost=yes',
-                   filename, user + '@localhost:/home/dbspool/spool/mtd/' + dbname + '/' +
-                   xmlfile]
+            cmd = ['scp', '-o', 'ProxyJump mtdloadb@lxplus.cern.ch', filename,
+                   'mtdloadb@dbloader-mtd.cern.ch:/home/dbspool/spool/mtd/' + dbname + '/' + xmlfile]
             subprocess.run(cmd)
         print('File uploaded...waiting for completion...')
         l = 'This is a dry run'
@@ -81,10 +78,10 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             wait_until_log_appear = True
             while wait_until_log_appear:
                 time.sleep(1)
-                cp = subprocess.run(['ssh', '-q', '-p', str(port), 
-                                     user + '@localhost', 'test', '-f', 
-                                     '/home/dbspool/logs/mtd/' + dbname + '/' + xmlfile, 
-                                     '&&', 'echo',  'Done!', '||', 'echo', '.', ';'], 
+                cp = subprocess.run(['ssh', '-o', 'ProxyJump mtdloadb@lxplus.cern.ch',
+                                     'mtdloadb@dbloader-mtd.cern.ch', 'test', '-f',
+                                     '/home/dbspool/logs/mtd/' + dbname + '/' + xmlfile,
+                                     '&&', 'echo',  'Done!', '||', 'echo', '.', ';'],
                                     stdout = PIPE, stderr = PIPE)
                 testres = cp.stdout.decode("utf-8").strip()
                 if len(testres) > 0:
