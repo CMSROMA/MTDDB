@@ -26,7 +26,7 @@ def opentunnel(user = None, port = 50022):
         print('    need to open a tunnel...')
         retval = subprocess.run(['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22', 
                                  '-L', '8113:dbloader-mtd.cern.ch:8113',
-                                 'mtdloadb@lxtunnel.cern.ch'])
+                                 user + '@lxtunnel.cern.ch'])
         if retval.returncode == 255:
             print('*** ERR *** Cannot open tunnel -- exiting...')
             exit(-1)
@@ -35,15 +35,21 @@ def initiateSession(user = None, port = 50022, write = False):
     if user == None:
         user = getpass.getuser()
     if write:
-        proc = None
-        if not isTunnelOpen():
+        try:
+            print('=== initiating session...')
+            subprocess.check_call(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
+        except subprocess.CalledProcessError:
             opentunnel(user, port)
+            print('=== retrying to initiate a session...')
+            subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
 
 def terminateSession(user = None, port = 50022, write = False):
     if write:
         if user == None:
             user = getpass.getuser()
-    
+        print('=== terminating session...')
+        subprocess.run(['ssh', '-O', 'exit', '-p', str(port), user + '@localhost'])
+        
 def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     print(f'Usage: {sys.argv[0]} [options]')
     if len(hlp) > 0:
@@ -58,17 +64,26 @@ def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     exit(err)
 
 def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False,
-              user = None, wait = 10, testdb = False):
+              user = None, wait = 10, testdb = False, debug = False):
     dbname = 'cmsr'
+    sshPort = f'-P{port}'
+    sshOptions = ''
+    sshTargetHost = 'localhost'
     if filename != 'registerMatrixBatch.xml':
         if user == None:
             user = getpass.getuser()
+        sshOptions += '-oNoHostAuthenticationForLocalhost=yes '
+#        sshOptions += '-oProxyJump=' + user + '@lxtunnel.cern.ch'    
         if not dryrun:
             xmlfile = os.path.basename(filename)
             if testdb:
                 dbname = 'int2r'
-            cmd = ['scp', '-o', 'ProxyJump mtdloadb@lxplus.cern.ch', filename,
-                   'mtdloadb@dbloader-mtd.cern.ch:/home/dbspool/spool/mtd/' + dbname + '/' + xmlfile]
+            cmd = ['scp', sshPort, sshOptions, filename,
+                   user + f'@{sshTargetHost}:/home/dbspool/spool/mtd/' + dbname + '/' + xmlfile]
+            if debug:
+                s = ' '
+                s = s.join(cmd)
+                print(f'DEBUG: {s}')
             subprocess.run(cmd)
         print('File uploaded...waiting for completion...')
         l = 'This is a dry run'
@@ -78,11 +93,17 @@ def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False
             wait_until_log_appear = True
             while wait_until_log_appear:
                 time.sleep(1)
-                cp = subprocess.run(['ssh', '-o', 'ProxyJump mtdloadb@lxplus.cern.ch',
-                                     'mtdloadb@dbloader-mtd.cern.ch', 'test', '-f',
-                                     '/home/dbspool/logs/mtd/' + dbname + '/' + xmlfile,
-                                     '&&', 'echo',  'Done!', '||', 'echo', '.', ';'],
-                                    stdout = PIPE, stderr = PIPE)
+                sshPort = f'-p{port}'
+                cmd = ['ssh', sshPort, sshOptions,
+                       user + f'@{sshTargetHost}', 'test', '-f',
+                       '/home/dbspool/logs/mtd/' + dbname + '/' + xmlfile,
+                       '&&', 'echo',  'Done!', '||', 'echo', '.', ';']
+                if debug:
+                    s = ' '
+                    s = s.join(cmd)
+                    print(f'DEBUG: {s}')
+                cp = subprocess.run(cmd,
+                                    stdout = PIPE, stderr = PIPE)                
                 testres = cp.stdout.decode("utf-8").strip()
                 if len(testres) > 0:
                     print(testres[-1], end = '', flush = True)
@@ -149,19 +170,22 @@ def attribute(parent, name, value):
 def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = None, user = None,
          location = 'testLab', serial = None):
     part = etree.Element("PART", mode = "auto")
-    kind_of_part = etree.SubElement(part, "KIND_OF_PART").text = kind_of_part
+    if len(kind_of_part) > 0:
+        kind_of_part = etree.SubElement(part, "KIND_OF_PART").text = kind_of_part
     barcode = etree.SubElement(part, "BARCODE").text = barcode
     if serial != None:
         serial = etree.SubElement(part, "SERIAL_NUMBER").text = serial
     if user == None:
         user = getpass.getuser()
     record_insertion = etree.SubElement(part, "RECORD_INSERTION_USER").text = user
-    location = etree.SubElement(part, "LOCATION").text = location
+    if len(location) > 0:
+        location = etree.SubElement(part, "LOCATION").text = location
     if batch != None and len(batch) > 0:
         batchIngot = etree.SubElement(part, "BATCH_NUMBER").text = str(batch)
     if manufacturer != None and manufacturer.isnumeric():
-        manufacturer = 'Producer_' + str(manufacturer)        
-    manufacturer = etree.SubElement(part, "MANUFACTURER").text = manufacturer 
+        manufacturer = 'Producer_' + str(manufacturer)
+    if len(manufacturer) > 0:
+        manufacturer = etree.SubElement(part, "MANUFACTURER").text = manufacturer 
     predefined_attributes = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
     if attributes != None:
         jattributes = []
@@ -169,7 +193,7 @@ def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = 
             jattributes = json.loads(attributes)
         for d in jattributes:
             for key,value in d.items():
-                print(f'{key} --> {value}')
+#                print(f'{key} --> {value}')
                 attribute(predefined_attributes, key, value)
     return part
 
