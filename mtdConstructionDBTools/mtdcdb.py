@@ -63,79 +63,77 @@ def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
         print('       ' + shrtOpts[i] + ' ('+ longOpts[i] + '): ' + helpOpts[i])
     exit(err)
 
-def writeToDB(port = 50022, filename = 'registerMatrixBatch.xml', dryrun = False,
-              user = None, wait = 10, testdb = False, debug = False):
+def writeToDB(port = 50022, filename = 'filenotfound.xml', dryrun = False,
+              user = None, wait = 10, testdb = False, proxy = False):
     dbname = 'cmsr'
-    sshPort = f'-P{port}'
-    sshOptions = ''
+    cmd = ['scp']
+    if not proxy:
+        cmd.append(f'-P{port}')
     sshTargetHost = 'localhost'
-    if filename != 'registerMatrixBatch.xml':
-        if user == None:
-            user = getpass.getuser()
-        sshOptions += '-oNoHostAuthenticationForLocalhost=yes '
-#        sshOptions += '-oProxyJump=' + user + '@lxtunnel.cern.ch'    
-        if not dryrun:
-            xmlfile = os.path.basename(filename)
-            if testdb:
-                dbname = 'int2r'
-            cmd = ['scp', sshPort, sshOptions, filename,
-                   user + f'@{sshTargetHost}:/home/dbspool/spool/mtd/' + dbname + '/' + xmlfile]
-            if debug:
-                s = ' '
-                s = s.join(cmd)
-                print(f'DEBUG: {s}')
-            subprocess.run(cmd)
-        print('File uploaded...waiting for completion...')
-        l = 'This is a dry run'
-        lst = ''
-        if not dryrun:
-            # wait until the log appears
-            wait_until_log_appear = True
-            while wait_until_log_appear:
-                time.sleep(1)
-                sshPort = f'-p{port}'
-                cmd = ['ssh', sshPort, sshOptions,
-                       user + f'@{sshTargetHost}', 'test', '-f',
-                       '/home/dbspool/logs/mtd/' + dbname + '/' + xmlfile,
-                       '&&', 'echo',  'Done!', '||', 'echo', '.', ';']
-                if debug:
-                    s = ' '
-                    s = s.join(cmd)
-                    print(f'DEBUG: {s}')
-                cp = subprocess.run(cmd,
-                                    stdout = PIPE, stderr = PIPE)                
-                testres = cp.stdout.decode("utf-8").strip()
-                if len(testres) > 0:
-                    print(testres[-1], end = '', flush = True)
-                    if 'Done!' in testres:
-                        wait_until_log_appear = False
+    if proxy:
+        sshTargetHost = 'dbloader-mtd.cern.ch'
+    if user == None:
+        user = getpass.getuser()
+    cmd.append('-oNoHostAuthenticationForLocalhost=yes')
+    cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
+    cmd.append(filename)
+    if not dryrun:
+        xmlfile = os.path.basename(filename)
+        if testdb:
+            dbname = 'int2r'
+        cmd.append(user + f'@{sshTargetHost}:/home/dbspool/spool/mtd/' + dbname + '/' + xmlfile)
+        retval = subprocess.run(cmd)
+        if retval.returncode != 0:
+            print(f'ERROR - Upload failed')
+            exit(-1)
+    print('File uploaded...waiting for completion...')
+    l = 'This is a dry run'
+    lst = ''
+    if not dryrun:
+        # wait until the log appears
+        wait_until_log_appear = True
+        cmd = ['ssh']
+        if not proxy:
+            cmd.append(f'-p{port}')
+        cmd.append('-oNoHostAuthenticationForLocalhost=yes')
+        cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
+        cmd.append(user + f'@{sshTargetHost}')
+        remoteCommand = f'test -f /home/dbspool/logs/mtd/{dbname}/{xmlfile} && echo Done! || echo .;'
+        rc = remoteCommand.split(' ')
+        for s in rc:
+            cmd.append(s)
+        while wait_until_log_appear:
+            time.sleep(1)
+            cp = subprocess.run(cmd, stdout = PIPE, stderr = PIPE)                
+            testres = cp.stdout.decode("utf-8").strip()
+            if len(testres) > 0:
+                print(testres[-1], end = '', flush = True)
+                if 'Done!' in testres:
+                    wait_until_log_appear = False
                 else:
                     print('Waiting for the log file to appear...')
                     time.sleep(5)
             # get the last line of the log file
-            l = str(cp.stdout)
-            ret = -1
-            lst = l.split('\\n')
-        if len(lst) >= 2 or dryrun:
-            if not dryrun:
-                l = lst[-2]
-                if re.match('.* - commit transaction', l):
-                    ret = 0
-                    print('    SUCCESS    ')
-                else:
-                    ret = 0
-                    print('    SUCCESS    ')
-        else:
-            print('*** ERR *** ' + l)
-            print('(*) DB uploading can take time to complete. The above message is a guess.')
-            print('    Please check using the web interface.')
-            print('    to verify if data has been, at least partially, uploaded.')
-            print('    You can even browse the whole log file using the following command')
-            print('    ssh -p 50022 <your-cern-username>@localhost cat /home/dbspool/logs/mtd/' + dbname +
-                  '/' + filename)
+        l = str(cp.stdout)
+        ret = -1
+        lst = l.split('\\n')
+    if len(lst) >= 2 or dryrun:
+        if not dryrun:
+            l = lst[-2]
+            if re.match('.* - commit transaction', l):
+                ret = 0
+                print('    SUCCESS    ')
+            else:
+                ret = 0
+                print('    SUCCESS    ')
     else:
-        print('*** ERR *** xml filename is mandatory. Cannot use the default one')
-
+        print('*** ERR *** ' + l)
+        print('(*) DB uploading can take time to complete. The above message is a guess.')
+        print('    Please check using the web interface.')
+        print('    to verify if data has been, at least partially, uploaded.')
+        print('    You can even browse the whole log file using the following command')
+        print('    ssh -p 50022 <your-cern-username>@localhost cat /home/dbspool/logs/mtd/' + dbname +
+              '/' + filename)
 '''
 create generic XML elements to register parts in the db
 '''

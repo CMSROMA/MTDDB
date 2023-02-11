@@ -116,6 +116,7 @@ prefix = 'PRE'
 update = False
 tunnelUser = None
 debug = False
+proxy = False
 
 errors = 0
 
@@ -166,6 +167,7 @@ for o, a in opts:
         update = True
     elif o in ('-T', '--tunnel'):
         tunnelUser = a
+        proxy = True
     elif o in ('-S', '--skip'):
         update = True
         attrs = '[{"Global Status": "Skipped"}]'
@@ -175,6 +177,9 @@ for o, a in opts:
     else:
         assert False, 'unhandled option'
 
+if tunnelUser == None:
+    tunnelUser = username
+
 # running conditions
 logger.setLevel(logginglevel)
 logger.debug(f'Debugging mode ON')
@@ -183,6 +188,7 @@ logger.debug(f'Registering part of type: {partType}')
 logger.debug(f'Apparently you are in {g.city}')
 logger.debug(f'Setting lab to {laboratory}')
 logger.debug(f'        Username: {username}')
+logger.debug(f'     Tunnel user: {tunnelUser}')
 logger.debug(f'           Batch: {batchIngot}')
 logger.debug(f'         Barcode: {barcode}')
 logger.debug(f'   Serial number: {serialNumber}')
@@ -253,8 +259,8 @@ condXml = None
 myroot = mtdcdb.root()
 parts = etree.SubElement(myroot, "PARTS")
 
-if tunnelUser == None:
-    mtdcdb.initiateSession(user = username, write = write)
+if tunnelUser == username:
+    mtdcdb.initiateSession(user = tunnelUser, write = write)
 
 processedbarcodes = []
 
@@ -301,7 +307,8 @@ def formatSerialNumber(serialNumber):
         l = len(serialNumber)
         logger.error(f'Serial number {serialNumber} for part {barcode} too long\n' + 
                      f'       the maximum allowed length is 40; it is {l}...exiting...')
-        mtdcdb.terminateSession(username)
+        if tunnelUser == username:
+            mtdcdb.terminateSession(username)
         exit(-1)
     return serialNumber
 
@@ -321,7 +328,8 @@ def formatBarcode(barcode, i = 0):
         err = 1;
     if len(sbarcode) != 13:
         logger.error('barcode must be an integer or have a length of 13')
-        mtdcdb.terminateSession(username)
+        if tunnelUser == username:
+            mtdcdb.terminateSession(username)
         exit(-1)        
     return sbarcode
     
@@ -383,11 +391,12 @@ if write:
             tb = False
             if database == 'int2r':
                 tb = True
-            mtdcdb.writeToDB(filename = xmlfile, user = username, testdb = tb, debug = debug)
-            mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username, testdb = tb, debug = debug)
+            mtdcdb.writeToDB(filename = xmlfile, user = tunnelUser, testdb = tb, proxy = proxy)
+            mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = tunnelUser, testdb = tb, proxy = proxy)
     logger.info(loggerString + 'done')
 
-mtdcdb.terminateSession(username)
+if tunnelUser == username:
+    mtdcdb.terminateSession(username)
 
 # check the results using rhapi.py
 logger.info('Operation summary:')
