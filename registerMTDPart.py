@@ -24,6 +24,7 @@ import geocoder
 
 # set constants
 laboratories = ['Roma', 'Nebraska', 'VirtualLab']
+labname = {'Rome': 'Roma'} # this dictionary associates the international name of a city to a lab name
 allowedParts = ['LYSOMatrix #1', 'LYSOMatrix #2', 'LYSOMatrix #3',
                 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',
                 'ETROC']
@@ -38,9 +39,10 @@ logger.addHandler(ch)
 logginglevel = logging.INFO
 
 # get command line options
-shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:DiP:a:'
+shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:DiP:a:USRT:'
 longOpts = ['help', 'batch=', 'barcode=', 'serial=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
-            'n=', 'write', 'user=', 'data=', 'comment=', 'debug', 'int2r', 'prefix=', 'attrs=']
+            'n=', 'write', 'user=', 'data=', 'comment=', 'debug', 'int2r', 'prefix=', 'attrs=',
+            'update', 'skip', 'reject', 'tunnel=']
 helpOpts = ['shows this help',
             'specify the batch to which the part belongs',
             'specify the barcode of the part',
@@ -64,9 +66,13 @@ helpOpts = ['shows this help',
             'use test database int2r',
             'set the prefix to be used when creating the barcode (default PRE)',
             'assign predefined attributes: attributes must be specified as a dictionary like\n' +
-            '                         [{"NAME": "attr name", "VALUE": "attr value"},\n' +
-            '                          {"NAME": "another name", "VALUE": "another value"}]\n' +
-            '                         double quotes are mandatory'
+            '                         [{"attribute_name": "attribute_value"},\n' +
+            '                          {"another_name": "another_value"}]\n' +
+            '                         double quotes are mandatory',
+            'update the attributes of the part [NOT YET IMPLEMENTED]',
+            'skip measurements [NOT YET IMPLEMENTED]',
+            'set as rejected [NOT YET IMPLEMENTED]',
+            'tunnel user (default mtdloadb) [NOT YET IMPLEMENTED]'
             ]
 
 hlp = ('Generates the XML file needed to register one or more MTD parts.\n' 
@@ -93,7 +99,9 @@ producer = ''
 partType = ''
 csvfile = None
 g = geocoder.ip('me')
-laboratory = g.city
+laboratory = None
+if g.city in labname:
+    laboratory = labname[g.city]
 xmlfile = os.path.basename(sys.argv[0]).replace('.py', '.xml')
 nbarcodes = 1
 write = False
@@ -105,6 +113,10 @@ attrs = None
 database = 'cmsr'
 nn = 1
 prefix = 'PRE'
+update = False
+tunnelUser = None
+debug = False
+proxy = False
 
 errors = 0
 
@@ -144,14 +156,29 @@ for o, a in opts:
         multiplicity = 0
     elif o in ('-D', '--debug'):
         logginglevel = logging.DEBUG
+        debug = True
     elif o in ('-i', '--int2r'):
         database = 'int2r'
     elif o in ('-P', '--prefix'):
         prefix = a
     elif o in ('-a', '--attrs'):
         attrs = a
+    elif o in ('-U', '--update'):
+        update = True
+    elif o in ('-T', '--tunnel'):
+        tunnelUser = a
+        proxy = True
+    elif o in ('-S', '--skip'):
+        update = True
+        attrs = '[{"Global Status": "Skipped"}]'
+    elif o in ('-R', '--reject'):
+        update = True
+        attrs = '[{"Global Status": "Rejected"}]'
     else:
         assert False, 'unhandled option'
+
+if tunnelUser == None:
+    tunnelUser = username
 
 # running conditions
 logger.setLevel(logginglevel)
@@ -161,12 +188,15 @@ logger.debug(f'Registering part of type: {partType}')
 logger.debug(f'Apparently you are in {g.city}')
 logger.debug(f'Setting lab to {laboratory}')
 logger.debug(f'        Username: {username}')
+logger.debug(f'     Tunnel user: {tunnelUser}')
 logger.debug(f'           Batch: {batchIngot}')
 logger.debug(f'         Barcode: {barcode}')
 logger.debug(f'   Serial number: {serialNumber}')
 logger.debug(f'        Producer: {producer}')
 logger.debug(f'csvfile (if any): {csvfile}')
 logger.debug(f' Number of parts: {nbarcodes}')
+logger.debug(f'        updating: {update}')
+logger.debug(f'      attributes: {attrs}')
 logger.debug(f'         Comment: {comment}')
 if len(pdata) > 0:
     logger.debug(f'   producer data: {pdata}')
@@ -178,7 +208,7 @@ else:
     logger.debug(f'Will NOT write to DB {database}')
 
 # make basic checks
-if batchIngot == '':
+if batchIngot == '' and not update:
     logger.error('batch/ingot information is mandatory. Please provide it')
     errors += 1
 
@@ -186,7 +216,7 @@ if barcode == '' and csvfile == None:
     logger.error('barcode or file are mandatory. Please provide one of them')
     errors += 1
 
-if barcode != '' and csvfile == None and (producer == '' or partType == ''):
+if (barcode != '' and csvfile == None and (producer == '' or partType == '')) and not update:
     logger.error('providing a barcode, requires to provide a producer, too, as well as a type.' +
                  'If you got this error, it is possible that you mistyped the type')
     errors += 1    
@@ -199,12 +229,16 @@ if csvfile != None and producer != '':
     logger.error('you provided a CSV file: the producer is expected to be given in the file')    
     errors += 1
 
-if producer == '' and csvfile == None:
+if producer == '' and csvfile == None and not update:
     logger.error('producer information is mandatory. Please provide it')
     errors += 1
 
-if laboratory not in laboratories:
+if laboratory not in laboratories and not update:
     logger.error(f'laboratory {laboratory} not found in the list of valid locations')
+    errors += 1
+
+if update and (attrs == None or len(attrs) == 0):
+    logger.error(f'Can update a part only if you provide new attributes')
     errors += 1
     
 if errors != 0:
@@ -225,7 +259,8 @@ condXml = None
 myroot = mtdcdb.root()
 parts = etree.SubElement(myroot, "PARTS")
 
-mtdcdb.initiateSession(username, write = write)
+if tunnelUser == username:
+    mtdcdb.initiateSession(user = tunnelUser, write = write)
 
 processedbarcodes = []
 
@@ -235,7 +270,8 @@ runDict = { 'NAME': 'VISUAL_INSPECTION',
         }
 
 def createPart(partType, barcode, producer, batchIngot, username, laboratory,
-               serialNumber = None, attrs = None, comment = None, pdata = None, condXml = None):
+               serialNumber = None, attrs = None, comment = None, pdata = None, condXml = None,
+               update = False):
     '''
     process data to create the part XML
     '''
@@ -271,7 +307,8 @@ def formatSerialNumber(serialNumber):
         l = len(serialNumber)
         logger.error(f'Serial number {serialNumber} for part {barcode} too long\n' + 
                      f'       the maximum allowed length is 40; it is {l}...exiting...')
-        mtdcdb.terminateSession(username)
+        if tunnelUser == username:
+            mtdcdb.terminateSession(username)
         exit(-1)
     return serialNumber
 
@@ -279,15 +316,20 @@ def formatBarcode(barcode, i = 0):
     '''
     preprocess barcode
     '''
+    err = 0
+    sbarcode = str(barcode)    
     try:
         bc = int(barcode) + i
         sbarcode = str(bc)
         if len(sbarcode) != 13:
             lPref = 13-len(prefix)
-            sbarcode = f'{prefix}{bc:0{lPref}d}'            
+            sbarcode = f'{prefix}{bc:0{lPref}d}'    
     except ValueError:
+        err = 1;
+    if len(sbarcode) != 13:
         logger.error('barcode must be an integer or have a length of 13')
-        mtdcdb.terminateSession(username)
+        if tunnelUser == username:
+            mtdcdb.terminateSession(username)
         exit(-1)        
     return sbarcode
     
@@ -349,11 +391,12 @@ if write:
             tb = False
             if database == 'int2r':
                 tb = True
-            mtdcdb.writeToDB(filename = xmlfile, user = username, testdb = tb)
-            mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = username, testdb = tb)
+            mtdcdb.writeToDB(filename = xmlfile, user = tunnelUser, testdb = tb, proxy = proxy)
+            mtdcdb.writeToDB(filename = 'cond-' + xmlfile, user = tunnelUser, testdb = tb, proxy = proxy)
     logger.info(loggerString + 'done')
 
-mtdcdb.terminateSession(username)
+if tunnelUser == username:
+    mtdcdb.terminateSession(username)
 
 # check the results using rhapi.py
 logger.info('Operation summary:')
