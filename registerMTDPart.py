@@ -69,10 +69,10 @@ helpOpts = ['shows this help',
             '                         [{"attribute_name": "attribute_value"},\n' +
             '                          {"another_name": "another_value"}]\n' +
             '                         double quotes are mandatory',
-            'update the attributes of the part [NOT YET IMPLEMENTED]',
-            'skip measurements [NOT YET IMPLEMENTED]',
-            'set as rejected [NOT YET IMPLEMENTED]',
-            'tunnel user (default mtdloadb) [NOT YET IMPLEMENTED]'
+            'update the attributes of the part',
+            'skip measurements',
+            'set as rejected',
+            'tunnel user (default mtdloadb)'
             ]
 
 hlp = ('Generates the XML file needed to register one or more MTD parts.\n' 
