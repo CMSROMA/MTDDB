@@ -61,7 +61,7 @@ runSet = set(runs)
 # add the following line to your .ssh/config file
 # ControlPath ~/.ssh/control-%h-%p-%r
 if not debug:
-    mtdcdb.initiateSession()
+    mtdcdb.initiateSession(user='pbarria')
 # iterate over runs
 for run in runSet:
     # create an XML structure per run
@@ -70,10 +70,12 @@ for run in runSet:
     # extract the begin time of a run from its tag, if 
     run_begin = None
     m = re.search('_[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}', run)
+ 
     if m:
         run_begin = m.group(0)
         run_begin = re.sub('_', '', run_begin)
         run_begin = re.sub('-([0-9]{2})-([0-9]{2})-([0-9]{2})$', ' \\1:\\2:\\3', run_begin)
+
     # build the dictionary with data
     xdataset = {}
     for index, row in filtered_rows.iterrows():
@@ -139,10 +141,10 @@ for run in runSet:
     condition = mtdcdb.newCondition(root, condName, xdataset, run = run_dict,
                                     runBegin = run_begin)
     # dump the XML file
-    mtdcdb.transfer(condition, dryrun = dryrun)
+    mtdcdb.transfer(condition, dryrun = dryrun,user='pbarria')
     if debug:
         print(mtdcdb.mtdxml(condition))
     
 if not debug:
-    mtdcdb.terminateSession()
+    mtdcdb.terminateSession(user='pbarria')
 

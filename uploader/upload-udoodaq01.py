@@ -16,6 +16,7 @@ import glob
 # configuration (TBC)
 mydir = 'udoodaq01'
 debug = False
+dryrun_ = debug
 csvHead = 'runName'
 
 # configure the logger
@@ -41,13 +42,13 @@ csvHeader="runName,b_rms,producer,i1,i0,i3,i2,tag,decay_time,id,pe,lyRef,geometr
 for csvfile in files:
 
     # Initiate the session 
-    mtdcdb.initiateSession()
+    mtdcdb.initiateSession(user = 'mtdloadb')
 
     # get the content of the csv file
     logger.info(f'Processing file {csvfile}')
     firstline = open(csvfile, "r+").readline().rstrip("\r\n")
 
-    if firstline == csvHeader:
+    if "runName" in firstline:
         data = pd.read_csv(csvfile)
     else:
         data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) # if header is missing
@@ -56,7 +57,7 @@ for csvfile in files:
     runs = data[csvHead]
     runSet = set(runs)
 
-    # Iterate over runs:
+    # Iterate over runs (one for each bar):
     for run in runSet:
 
         # create the XML
@@ -75,16 +76,18 @@ for csvfile in files:
         # TBC ============== from here =========================================
 
         # get run info from the csv file
-        run_dict = { 'NAME': data.iloc[0]['runName'],
+        run_dict = { 'NAME': filtered_rows.iloc[0]['runName'],
                      'TYPE': 'PMT',
                      'NUMBER': -1,
                      'COMMENT': '',
                      'LOCATION': 'Roma/PMT'
-                 }
-
+        }
+        print("Entry Run Tag "+ run_dict['NAME'])
         bc = ''
+        # Loop over bars in a run (one bar)
         for index, row in filtered_rows.iterrows():
             xdataset = {}
+
             bc = str(row['id'])
 
             # format barcode
@@ -95,8 +98,8 @@ for csvfile in files:
 
             # read data from csv
 
-            lyAbs = row['ly']
-            lyNorm = lyAbs/row['lyRef']
+            lyAbs = row['ly']/row['pe']
+            lyNorm = row['ly']/row['lyRef']
             b_rms = row['b_rms']
             b_3s_asym = row['b_3s_asym']
             b_2s_asym = row['b_2s_asym']
@@ -120,13 +123,12 @@ for csvfile in files:
 
         # TBC ============== to here =========================================
 
-        logger.info(f'   File contains data for {len(data.index)} bars of matrix {bc}')
+        logger.info(f'   File contains data for bar of {bc}')
 
         # transfer data to DB
         if debug:
             print(mtdcdb.mtdxml(condition))
-        mtdcdb.transfer(condition)
-    mtdcdb.terminateSession()
+        mtdcdb.transfer(condition, dryrun=dryrun_, user='mtdloadb')
 
     # move the processed file
     csvfiledone = uploaderconfig.DIROUT + f'/{mydir}/' + csvfile.split(os.path.sep)[-1]

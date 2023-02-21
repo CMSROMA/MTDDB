@@ -23,6 +23,7 @@ import subprocess
 # configuration (TBC)
 mydir = 'pccmsdaq03'
 debug = False
+dryrun_ = debug
 csvHead = 'runName'
 
 # configure the logger
@@ -51,7 +52,7 @@ for csvfile in files:
     logger.info(f'Processing file {csvfile}')
     firstline = open(csvfile, "r+").readline().rstrip("\r\n")
 
-    if firstline == csvHeader:
+    if "runName" in firstline:
         data = pd.read_csv(csvfile)
     else:
         data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) #  if header is missing
@@ -61,10 +62,10 @@ for csvfile in files:
     runSet = set(runs)
 
     # Initiate the session 
-    mtdcdb.initiateSession()
+    mtdcdb.initiateSession(user='mtdloadb')
 
 
-    # Iterate over runs:
+    # Iterate over runs (one run for each array) :
     for run in runSet:
         # create an XML structure per run
         root = mtdcdb.root()
@@ -91,6 +92,7 @@ for csvfile in files:
                  }
 
         bc = ''
+        # Loop on bars inside array
         for index, row in filtered_rows.iterrows():
             xdataset = {}
             bc = str(row['id'])
@@ -99,7 +101,9 @@ for csvfile in files:
             # format barcode, if needed
             barcode = f'{bc}-{bar}'
             if len(bc) < 14:
-                barcode = f'PRE{bc.zfill(10)}-{bar}'
+                barcode = 'PRE'+f'{bc.zfill(10)}-{bar}'
+                if 'FK' in barcode:
+                    barcode = f'{bc.zfill(10)}-{bar}'
             
             # read data from csv
             lyAbs = row['ly']
@@ -136,8 +140,7 @@ for csvfile in files:
         # transfer data to DB
         if debug:
             print(mtdcdb.mtdxml(condition))
-        mtdcdb.transfer(condition, dryrun = False)
-    mtdcdb.terminateSession()
+        mtdcdb.transfer(condition, dryrun = dryrun_, user='mtdloadb')
 
     # move the processed file
     csvfiledone = uploaderconfig.DIROUT + f'/{mydir}/' + csvfile.split(os.path.sep)[-1]
