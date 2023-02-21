@@ -9,6 +9,7 @@ MTD database. For information about how to use it, just run it.
 
 '''
 from lxml import etree
+import time
 import numbers
 import random
 import getpass
@@ -403,6 +404,7 @@ logger.info('Operation summary:')
 for barcode in processedbarcodes:
     logger.info(f'Checking {barcode}')
     if write:
+        time.sleep(2)
         r = subprocess.run('python3 ./rhapi.py --url=http://localhost:8113  '
                            '"select * from mtd_' + database + '.parts p where p.barcode = \'' +
                            barcode + '\'" -s 10', shell = True, stdout = subprocess.PIPE)
