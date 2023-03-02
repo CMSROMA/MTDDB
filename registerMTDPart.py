@@ -40,10 +40,10 @@ logger.addHandler(ch)
 logginglevel = logging.INFO
 
 # get command line options
-shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:DiP:a:USRT:'
+shrtOpts = 'hb:x:s:p:t:l:f:o:n:wu:d:c:DiP:a:USRT:H:'
 longOpts = ['help', 'batch=', 'barcode=', 'serial=', 'producer=', 'type=', 'lab=', 'file=', 'output=',
             'n=', 'write', 'user=', 'data=', 'comment=', 'debug', 'int2r', 'prefix=', 'attrs=',
-            'update', 'skip', 'reject', 'tunnel=']
+            'update', 'skip', 'reject', 'tunnel=', 'destination=']
 helpOpts = ['shows this help',
             'specify the batch to which the part belongs',
             'specify the barcode of the part',
@@ -73,7 +73,8 @@ helpOpts = ['shows this help',
             'update the attributes of the part',
             'skip measurements',
             'set as rejected',
-            'tunnel user (default mtdloadb)'
+            'tunnel user (default mtdloadb)',
+            'ship part to specified destination'            
             ]
 
 hlp = ('Generates the XML file needed to register one or more MTD parts.\n' 
