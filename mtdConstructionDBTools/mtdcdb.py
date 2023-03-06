@@ -377,3 +377,31 @@ def reject(barcode):
     os.remove(path)
     return xml
 
+def xml2ship(barcodes, company = 'Some company', tracking_no = '0000-0001', myroot = None,
+             user = None, date = None, from_institution = 'None', from_location = 'None',
+             to_institution = 'None', to_location = 'None'):
+    shipments = None
+    if myroot == None:
+        myroot = root()
+        shipments = etree.SubElement(myroot, 'SHIPMENTS')
+    shipment = etree.SubElement(shipments, 'SHIPMENT')
+    company = etree.SubElement(shipment, "COMPANY_NAME").text = company
+    tracking_no = etree.SubElement(shipment, "TRACKING_NUMBER").text = tracking_no
+    status = etree.SubElement(shipment, "STATUS").text = 'SHIPPED'
+    if user == None:
+        user = getpass.getuser()    
+    user = etree.SubElement(shipment, "PERSON").text = user
+    if date == None:
+        date = str(datetime.now())
+    date = etree.SubElement(shipment, "DATE").text = date
+    from_institution = etree.SubElement(shipment, "FROM_INSTITUTION").text = from_institution
+    from_location = etree.SubElement(shipment, "FROM_LOCATION").text = from_location
+    to_institution = etree.SubElement(shipment, "TO_INSTITUTION").text = to_institution
+    to_location = etree.SubElement(shipment, "TO_LOCATION").text = to_location
+    items = etree.SubElement(shipment, 'ITEMS')
+    for part in barcodes:
+        item = etree.SubElement(items, 'ITEM')
+        p = etree.SubElement(item, 'PART')
+        bcode = etree.SubElement(p, 'BARCODE').text = part
+    return myroot
+
