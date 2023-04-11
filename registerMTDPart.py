@@ -21,7 +21,10 @@ import re
 import logging
 import pandas as pd
 from mtdConstructionDBTools import mtdcdb
-import geocoder
+try:
+    import geocoder
+except ImportError as e:
+    geocoder = None
 
 # set constants
 laboratories = ['Roma', 'Nebraska', 'VirtualLab']
@@ -100,9 +103,11 @@ serialNumber = None
 producer = ''
 partType = ''
 csvfile = None
-g = geocoder.ip('me')
+g = None
+if geocoder != None:
+    g = geocoder.ip('me')
 laboratory = None
-if g.city in labname:
+if g != None and g.city in labname:
     laboratory = labname[g.city]
 xmlfile = os.path.basename(sys.argv[0]).replace('.py', '.xml')
 nbarcodes = 1
@@ -187,7 +192,8 @@ logger.setLevel(logginglevel)
 logger.debug(f'Debugging mode ON')
 logger.debug(f'output on {xmlfile}')
 logger.debug(f'Registering part of type: {partType}')
-logger.debug(f'Apparently you are in {g.city}')
+if g!= None:
+    logger.debug(f'Apparently you are in {g.city}')
 logger.debug(f'Setting lab to {laboratory}')
 logger.debug(f'        Username: {username}')
 logger.debug(f'     Tunnel user: {tunnelUser}')
@@ -266,8 +272,11 @@ if tunnelUser == username:
 
 processedbarcodes = []
 
+loc = 'Unknown'
+if g != None:
+    loc = g.city
 runDict = { 'NAME': 'VISUAL_INSPECTION',
-            'LOCATION': g.city,
+            'LOCATION': loc,
             'USER': username
         }
 
