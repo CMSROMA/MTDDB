@@ -11,10 +11,39 @@ import time
 from datetime import datetime
 import math
 import socket
+import logging
 
 '''
 general services
 '''
+def createLogger():
+    logger = logging.getLogger(os.path.basename(__file__))
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    logginglevel = logging.INFO
+    return logger, logginglevel
+
+def stdOptions():
+    shrtOpts = 'hb:x:o:wu:c:DiT:'
+    longOpts = ['help', 'batch=', 'barcode=', 'output=', 'write', 'user=', 'comment=', 'debug',
+                'int2r', 'tunnel=']
+    helpOpts = ['shows this help',
+                'specify the batch to which the part belongs',
+                'specify the barcode of the part',
+                'the filename of the XML output file',
+                'upload the XML file automatically at the end of the processing',
+                'the CERN username authorised to permanently write data to DB \n' +
+                '         (default to current username)',
+                'operator comments',
+                'activate debugging mode',
+                'use test database int2r',
+                'tunnel user (default mtdloadb)'
+    ]
+    return shrtOpts, longOpts, helpOpts
+
 def isTunnelOpen(port = 50022):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0

@@ -17,6 +17,7 @@ import logging
 from mtdConstructionDBTools import mtdcdb
 
 # configure logger
+'''
 logger = logging.getLogger(os.path.basename(__file__))
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -24,7 +25,13 @@ formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logginglevel = logging.INFO
+'''
 
+logger, logginglevel = mtdcdb.createLogger()
+
+shrtOpts, longOpts, helpOpts = mtdcdb.stdOptions()
+
+'''
 shrtOpts = 'hb:x:o:wu:c:DiT:'
 longOpts = ['help', 'batch=', 'barcode=', 'output=', 'write', 'user=', 'comment=', 'debug',
             'int2r', 'tunnel=']
@@ -40,6 +47,7 @@ helpOpts = ['shows this help',
             'use test database int2r',
             'tunnel user (default mtdloadb)'
             ]
+'''
 
 hlp = ('Generates the XML file needed to set an MTD part as rejected.\n' 
        'In order to ship data to CERN, you may need to setup a tunnel as follows:\n'
