@@ -218,9 +218,11 @@ def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = 
         jattributes = []
         if isinstance(attributes, str):
             jattributes = json.loads(attributes)
+        else:
+            jattributes = attributes
         for d in jattributes:
             for key,value in d.items():
-#                print(f'{key} --> {value}')
+#                print(f'=========== GODEBUG ==========================={key} --> {value}')
                 attribute(predefined_attributes, key, value)
     return part
 
