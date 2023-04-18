@@ -13,6 +13,8 @@ import math
 import socket
 import logging
 
+internalDebugging = False
+
 '''
 general services
 '''
@@ -51,11 +53,16 @@ def isTunnelOpen(port = 50022):
 def opentunnel(user = None, port = 50022):
     if user == None:
         user = getpass.getuser()
-    if not isTunnelOpen():
+    if not isTunnelOpen() and 'cern.ch' in socket.getfqdn():
         print('    need to open a tunnel...')
-        retval = subprocess.run(['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22', 
-                                 '-L', '8113:dbloader-mtd.cern.ch:8113',
-                                 user + '@lxtunnel.cern.ch'])
+        cmd = ['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22',
+               '-L', '8113:dbloader-mtd.cern.ch:8113',
+               user + '@lxtunnel.cern.ch']
+        if internalDebugging:
+            for subcmd in cmd:
+                print(subcmd + ' ', end = '')
+            print()
+        retval = subprocess.run(cmd)
         if retval.returncode == 255:
             print('*** ERR *** Cannot open tunnel -- exiting...')
             exit(-1)
@@ -63,21 +70,35 @@ def opentunnel(user = None, port = 50022):
 def initiateSession(user = None, port = 50022, write = False):
     if user == None:
         user = getpass.getuser()
-    if write:
+    if write and not 'cern.ch' in socket.getfqdn():
+        cmd = ['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost']
         try:
             print('=== initiating session...')
-            subprocess.check_call(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
+            if internalDebugging:
+                for subcmd in cmd:
+                    print(subcmd + ' ', end = '')
+                print()
+            subprocess.check_call(cmd)
         except subprocess.CalledProcessError:
             opentunnel(user, port)
             print('=== retrying to initiate a session...')
-            subprocess.run(['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost'])
+            if internalDebugging:
+                for subcmd in cmd:
+                    print(subcmd + ' ', end = '')
+                print()
+            subprocess.run(cmd)
 
 def terminateSession(user = None, port = 50022, write = False):
     if write:
         if user == None:
             user = getpass.getuser()
         print('=== terminating session...')
-        subprocess.run(['ssh', '-O', 'exit', '-p', str(port), user + '@localhost'])
+        cmd = ['ssh', '-O', 'exit', '-p', str(port), user + '@localhost']
+        if internalDebugging:
+            for subcmd in cmd:
+                print(subcmd + ' ', end = '')
+            print()
+        subprocess.run(cmd)
         
 def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     print(f'Usage: {sys.argv[0]} [options]')
@@ -96,21 +117,27 @@ def writeToDB(port = 50022, filename = 'filenotfound.xml', dryrun = False,
               user = None, wait = 10, testdb = False, proxy = False):
     dbname = 'cmsr'
     cmd = ['scp']
-    if not proxy:
+    if not proxy and not 'cern.ch' in socket.getfqdn():
         cmd.append(f'-P{port}')
     sshTargetHost = 'localhost'
-    if proxy:
-        sshTargetHost = 'dbloader-mtd.cern.ch'
     if user == None:
         user = getpass.getuser()
     cmd.append('-oNoHostAuthenticationForLocalhost=yes')
-    cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
+    if proxy:
+        sshTargetHost = 'dbloader-mtd.cern.ch'
+        cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
+    if 'cern.ch' in socket.getfqdn():
+        sshTargetHost = 'dbloader-mtd.cern.ch'
     cmd.append(filename)
     if not dryrun:
         xmlfile = os.path.basename(filename)
         if testdb:
             dbname = 'int2r'
         cmd.append(user + f'@{sshTargetHost}:/home/dbspool/spool/mtd/' + dbname + '/' + xmlfile)
+        if internalDebugging:
+            for subcmd in cmd:
+                print(subcmd + ' ', end = '')
+            print()
         retval = subprocess.run(cmd)
         if retval.returncode != 0:
             print(f'ERROR - Upload failed')
@@ -122,10 +149,13 @@ def writeToDB(port = 50022, filename = 'filenotfound.xml', dryrun = False,
         # wait until the log appears
         wait_until_log_appear = True
         cmd = ['ssh']
-        if not proxy:
+        if not proxy and not 'cern.ch' in socket.getfqdn():
             cmd.append(f'-p{port}')
+        if proxy:
+            cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
         cmd.append('-oNoHostAuthenticationForLocalhost=yes')
-        cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
+        if 'cern.ch' in socket.getfqdn():
+            sshTargetHost = 'dbloader-mtd.cern.ch'
         cmd.append(user + f'@{sshTargetHost}')
         remoteCommand = f'test -f /home/dbspool/logs/mtd/{dbname}/{xmlfile} && echo Done! || echo .;'
         rc = remoteCommand.split(' ')
@@ -133,6 +163,10 @@ def writeToDB(port = 50022, filename = 'filenotfound.xml', dryrun = False,
             cmd.append(s)
         while wait_until_log_appear:
             time.sleep(1)
+            if internalDebugging:
+                for subcmd in cmd:
+                    print(subcmd + ' ', end = '')
+                print()
             cp = subprocess.run(cmd, stdout = PIPE, stderr = PIPE)                
             testres = cp.stdout.decode("utf-8").strip()
             if len(testres) > 0:
@@ -222,7 +256,7 @@ def part(barcode, kind_of_part, batch = None, attributes = None, manufacturer = 
             jattributes = attributes
         for d in jattributes:
             for key,value in d.items():
-#                print(f'=========== GODEBUG ==========================={key} --> {value}')
+#                print(f'{key} --> {value}')
                 attribute(predefined_attributes, key, value)
     return part
 

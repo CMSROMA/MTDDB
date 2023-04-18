@@ -216,7 +216,7 @@ else:
     logger.debug(f'Will NOT write to DB {database}')
 
 # make basic checks
-if batchIngot == '' and not update:
+if batchIngot == '' and not update and csvfile == None:
     logger.error('batch/ingot information is mandatory. Please provide it')
     errors += 1
 
@@ -265,7 +265,7 @@ condXml = None
 
 # create the root XML document containing parts
 myroot = mtdcdb.root()
-parts = etree.SubElement(myroot, "PARTS")
+partsXml = etree.SubElement(myroot, "PARTS")
 
 if tunnelUser == username:
     mtdcdb.initiateSession(user = tunnelUser, write = write)
@@ -332,13 +332,13 @@ def formatBarcode(barcode, i = 0):
     try:
         bc = int(barcode) + i
         sbarcode = str(bc)
-        if len(sbarcode) != 13:
-            lPref = 13-len(prefix)
+        if len(sbarcode) != 14:
+            lPref = 14-len(prefix)
             sbarcode = f'{prefix}{bc:0{lPref}d}'    
     except ValueError:
         err = 1;
-    if len(sbarcode) != 13:
-        logger.error('barcode must be an integer or have a length of 13')
+    if len(sbarcode) != 14:
+        logger.error('barcode must be an integer or have a length of 14')
         if tunnelUser == username:
             mtdcdb.terminateSession(username)
         exit(-1)        
@@ -360,8 +360,10 @@ if csvfile != None:
         producer = row['producer']
         comment = str(row['comments'])
         pdata = row['pdata']
+        batchIngot = row['batch']
         serialNumber = None
-        loggerString = 'Registering {barcode} of type {partType} made by producer {producer}'
+        loggerString = f'Registering {barcode} of type {partType} made by producer {producer}'
+        attrs = row['attributes']
         if 'serialnumber' in parts.columns:
             serialNumber = formatSerialNumber(str(row['serialnumber']).strip())
             loggerString += f' (serial #: {serialNumber})'
@@ -369,6 +371,7 @@ if csvfile != None:
         partXML, condXML = createPart(partType, barcode, producer, batchIngot, username, laboratory,
                                       serialNumber = serialNumber, attrs = attrs, comment = comment,
                                       pdata = pdata)
+        partsXml.append(partXML)
         processedbarcodes.append(barcode)
 
 elif barcode != '':
@@ -380,10 +383,10 @@ elif barcode != '':
         partXML, condXML = createPart(partType, sbarcode, producer, batchIngot, username, laboratory,
                                       serialNumber = serialNumber, attrs = attrs, comment = comment,
                                       pdata = pdata)
-        parts.append(partXML)
+        partsXml.append(partXML)
         processedbarcodes.append(sbarcode)
         
-fxml.write(mtdcdb.mtdxml(myroot))
+fxml.write(mtdcdb.mtdxml(partsXml))
 fxmlcond.write(mtdcdb.mtdxml(condXML))
 fxml.close()
 fxmlcond.close()
