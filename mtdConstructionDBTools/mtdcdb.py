@@ -50,15 +50,17 @@ def isTunnelOpen(port = 50022):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
-def opentunnel(user = None, port = 50022):
+def opentunnel(user = None, port = 50022, debug = False):
     if user == None:
         user = getpass.getuser()
-    if not isTunnelOpen() and 'cern.ch' in socket.getfqdn():
+    if debug:
+        print(f'user = {user} port = {port} fqdn = {socket.getfqdn()} tunnelOpen = {isTunnelOpen()}')
+    if (not isTunnelOpen()) or 'cern.ch' in socket.getfqdn():
         print('    need to open a tunnel...')
         cmd = ['ssh', '-f', '-N', '-L', str(port) + ':dbloader-mtd.cern.ch:22',
                '-L', '8113:dbloader-mtd.cern.ch:8113',
                user + '@lxtunnel.cern.ch']
-        if internalDebugging:
+        if debug:
             for subcmd in cmd:
                 print(subcmd + ' ', end = '')
             print()
@@ -67,26 +69,23 @@ def opentunnel(user = None, port = 50022):
             print('*** ERR *** Cannot open tunnel -- exiting...')
             exit(-1)
 
-def initiateSession(user = None, port = 50022, write = False):
+def initiateSession(user = None, port = 50022, write = False, debug = False):
     if user == None:
         user = getpass.getuser()
+    if debug:
+        print(f'user = {user} port = {port} write = {write}')
     if write and not 'cern.ch' in socket.getfqdn():
         cmd = ['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost']
         try:
             print('=== initiating session...')
-            if internalDebugging:
+            if debug:
                 for subcmd in cmd:
                     print(subcmd + ' ', end = '')
                 print()
             subprocess.check_call(cmd)
         except subprocess.CalledProcessError:
-            opentunnel(user, port)
             print('=== retrying to initiate a session...')
-            if internalDebugging:
-                for subcmd in cmd:
-                    print(subcmd + ' ', end = '')
-                print()
-            subprocess.run(cmd)
+            opentunnel(user, port, debug)
 
 def terminateSession(user = None, port = 50022, write = False):
     if write:
@@ -441,6 +440,24 @@ def reject(barcode):
 #    writeToDB(filename = path)
     os.remove(path)
     return xml
+
+def xml2skip(barcodes, myroot = None, user = None):
+    if isinstance(barcodes, str):
+        barcodes = [barcodes]
+    if myroot == None:
+        myroot = root()
+    parts = etree.SubElement(myroot, 'PARTS')
+    if user == None:
+        user = getpass.getuser()    
+    for barcode in barcodes:
+        part = etree.SubElement(parts, 'PART')
+        bcode = etree.SubElement(part, 'BARCODE').text = barcode
+        etree.SubElement(part, 'RECORD_INSERTION_USER').text = user
+        attrs = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
+        attr = etree.SubElement(attrs, 'ATTRIBUTE')
+        etree.SubElement(attr, 'NAME').text = 'Global Status'
+        etree.SubElement(attr, 'VALUE').text = 'Skipped'        
+    return myroot
 
 def xml2ship(barcodes, company = 'Some company', tracking_no = '0000-0001', myroot = None,
              user = None, date = None, from_institution = 'None', from_location = 'None',

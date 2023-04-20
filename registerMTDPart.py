@@ -386,7 +386,7 @@ elif barcode != '':
         partsXml.append(partXML)
         processedbarcodes.append(sbarcode)
         
-fxml.write(mtdcdb.mtdxml(partsXml))
+fxml.write(mtdcdb.mtdxml(myroot))
 fxmlcond.write(mtdcdb.mtdxml(condXML))
 fxml.close()
 fxmlcond.close()
