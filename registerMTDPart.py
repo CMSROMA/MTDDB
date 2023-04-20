@@ -298,13 +298,13 @@ def createPart(partType, barcode, producer, batchIngot, username, laboratory,
         condXML = mtdcdb.newCondition(condXml, 'PART_REGISTRATION', conditions, run = runDict);
     partXML = mtdcdb.part(barcode, partType, batch = batchIngot, attributes = attrs, user = username,
                           location = laboratory, manufacturer = producer, serial = serialNumber)
-    # special treatment for parts composed by subrparts
+    # special treatment for parts composed by subparts
     if 'LYSOMatrix' in partType:
         singlextal = etree.SubElement(partXML, "CHILDREN")        
         for i in range(16):
             partSubType = 'singleBarCrystal'
             singlextal.append(mtdcdb.part(f'{barcode}-{i}', partSubType, batch = batchIngot, user = username,
-                                  location = laboratory, manufacturer = producer, serial = serialNumber))
+                                          location = laboratory, manufacturer = producer, serial = None))
         partXML.append(singlextal)
     return partXML, condXML
 
