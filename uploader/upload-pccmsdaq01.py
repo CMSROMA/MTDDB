@@ -1,8 +1,8 @@
 '''
-upload-pmt - by giovanni.organtini@roma1.infn.it (2022), patrizia.barria@roma1.infn.ir, claudio.quaranta@roma1.infn.it
+upload-array - by giovanni.organtini@roma1.infn.it (2022)
 ----------------------------------------------------------
 
-Automatically upload data stored after the measurement on the PMT bench to the DB
+Automatically upload data stored after the measurement on the SINGLE ARRAY bench (with grease) to the DB
 '''
 
 from mtdConstructionDBTools import mtdcdb
@@ -18,8 +18,14 @@ import signal
 import getopt
 import uploaderconfig
 
+#cmd = '. /home/cmsdaq/miniconda3/etc/profile.d/conda.sh && conda activate my-rdkit-env' 
+#subprocess.call(cmd, shell=True, executable='/bin/bash')
+
+# activate conda
+#os.system("conda activate mtddb")
+
 # Standard configuration (TBC)
-inputdir = 'udoodaq01'
+inputdir = 'pccmsdaq01'
 csvHead  = 'runName'
 debug    = False
 dryrun_  = False
@@ -73,19 +79,11 @@ files = glob.glob(uploaderconfig.DIRIN + f'/{inputdir}/*.csv')
 if debug:
     logger.debug(f'Looking for files in {uploaderconfig.DIRIN}/{inputdir}')
 
-# open tunnel to dbloader for query
+# open tunnel to dbloader for query with rhapi
 os.system('ssh -f -N -L 8113:dbloader-mtd.cern.ch:8113 mtdloadb@lxplus.cern.ch')
 
-csvHeader="runName,b_rms,producer,i1,i0,i3,i2,tag,decay_time,id,pe,lyRef,geometry,b_3s_asym,b_2s_asym,time,type,ly"
+csvHeader = "tag,producer,type,id,geometry,runName,temp,bar,posX,posY,ly,ctr,sigmaT,err_sigmaT,lyRef,ctrRef,sigmaTRef,xtLeft,xtRight" 
 for csvfile in files:
-
-    # Initiate the session 
-    mtdcdb.initiateSession(user = 'mtdloadb', write=True)
-
-    # Open file for failed uploads
-    csvfile_succeded = open(uploaderconfig.DIRUPLOADED + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "a")
-    csvfile_failed   = open(uploaderconfig.DIRFAILED   + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "a")
-    n_failed = 0
 
     # get the content of the csv file
     logger.info(f'Processing file {csvfile}')
@@ -94,90 +92,102 @@ for csvfile in files:
     if "runName" in firstline:
         data = pd.read_csv(csvfile)
     else:
-        data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) # if header is missing
+        data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) #  if header is missing
 
     # first get the different runs
     runs = data[csvHead]
     runSet = set(runs)
 
-    # Iterate over runs (one for each bar):
-    for run in runSet:
+    # Initiate the session 
+    mtdcdb.initiateSession(user='mtdloadb', write=True)
 
-        # create the XML
+    # Output files
+    csvfile_succeded = open(uploaderconfig.DIRUPLOADED + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "a")
+    csvfile_failed   = open(uploaderconfig.DIRFAILED   + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "a")
+    n_failed = 0
+
+    # Iterate over runs:
+    for run in runSet:
+        # create an XML structure per run
         root = mtdcdb.root()
         filtered_rows = data.loc[data[csvHead] == run]
 
         run_begin = None
-        run_begin = filtered_rows.iloc[0]['time']
-        run_begin = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(run_begin))
-
-        logger.info(f'   File contains run {run} started on {run_begin}')
+        m = re.search('_[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}', run)
+        run_begin = m.group(0)
+        run_begin = re.sub('_', '', run_begin)
+        run_begin = re.sub('-([0-9]{2})-([0-9]{2})-([0-9]{2})$', ' \\1:\\2:\\3', run_begin)
+        logger.info(f'File contains run {run} started on {run_begin}')
 
         # TBC ============== from here =========================================
 
         # get run info from the csv file
-        run_dict = { 'NAME': filtered_rows.iloc[0]['runName'],
-                     'TYPE': 'PMT',
+        run_dict = { 'NAME': run,
+                     'TYPE': 'TOFPET',
                      'NUMBER': -1,
                      'COMMENT': '',
-                     'LOCATION': 'Roma/PMT'
-        }
-        print("Entry Run Tag "+ run_dict['NAME'])
-        # Loop over bars in a run (one bar)
+                     'LOCATION': 'Roma/ARRAY'
+                 }
+
+        bc = ''
         for index, row in filtered_rows.iterrows():
             xdataset = {}
-
             bc = str(row['id'])
-            barcode = str(row['id'])
-            if not 'FK' in barcode:
-                barcode = 'PRE{:010d}'.format(int(row['id']))
+            bar = row['bar']
+
+            # format barcode, if needed
+            barcode = f'{bc}-{bar}'
+            if len(bc) < 14:
+                barcode = 'PRE'+f'{bc.zfill(10)}-{bar}'
+                if 'FK' in barcode:
+                    barcode = f'{bc.zfill(10)}-{bar}'
 
             # read data from csv
-
-            lyAbs = row['ly']/row['pe']
-            lyNorm = row['ly']/row['lyRef']
-            b_rms = row['b_rms']
-            b_3s_asym = row['b_3s_asym']
-            b_2s_asym = row['b_2s_asym']
-            decay_time = row['decay_time']
-
+            lyAbs = row['ly']
+            lyNorm = lyAbs/row['lyRef']
+            ctr = row['ctr']
+            ctr_norm = ctr/row['ctrRef']
+            sigma_t = row['sigmaT']
+            sigma_t_norm = sigma_t/row['sigmaTRef']
+            temperature = row['temp']
+            xtLeft = row['xtLeft']
+            xtRight = row['xtRight']
         
             # prepare the dictionary
-            xdata = [{'NAME': 'B_RMS',      'VALUE': b_rms},
-                     {'NAME': 'B_3S_ASYM',  'VALUE': b_3s_asym},
-                     {'NAME': 'B_2S_ASYM',  'VALUE': b_2s_asym},
-                     {'NAME': 'LY_ABS',     'VALUE': lyAbs},
-                     {'NAME': 'DECAY_TIME', 'VALUE': decay_time},
-                     {'NAME': 'LY_NORM',    'VALUE': lyNorm}]
-
-
-               
+            xdata = [{'NAME': 'CTR',          'VALUE': ctr},
+                     {'NAME': 'CTR_NORM',     'VALUE': ctr_norm},
+                     {'NAME': 'TEMPERATURE',  'VALUE': temperature},
+                     {'NAME': 'XTLEFT',       'VALUE': xtLeft},
+                     {'NAME': 'XTRIGHT',      'VALUE': xtRight},
+                     {'NAME': 'LY',           'VALUE': lyAbs},                     
+                     {'NAME': 'LY_NORM',      'VALUE': lyNorm},
+                     {'NAME': 'SIGMA_T',      'VALUE': sigma_t},
+                     {'NAME': 'SIGMA_T_NORM', 'VALUE': sigma_t_norm}]
+                
             # pack data
             xdataset[barcode] = xdata
-            condition = mtdcdb.newCondition(root, 'LY MEASUREMENT', xdataset, run = run_dict,
+            #print(xdataset)
+            condition = mtdcdb.newCondition(root, 'LY XTALK', xdataset, run = run_dict,
                                             runBegin = run_begin)
-
+            
         # TBC ============== to here =========================================
 
-        logger.info(f'   File contains data for bar {barcode}')
+        logger.info(f'File contains data for {len(filtered_rows)} bars of matrix {bc}')
 
         # transfer data to DB
         if debug:
             print(mtdcdb.mtdxml(condition))
-        mtdcdb.transfer(condition, dryrun=dryrun_, user='mtdloadb')
-
+        mtdcdb.transfer( condition, user='mtdloadb', dryrun = dryrun_)
 
         ######################################
         # check the upload status using rhapi.py
-        ######################################
-
         logger.info('Operation summary:')
-        logger.info(f'Checking {barcode}')
+        logger.info(f'   Checking {bc}')
     
         if not debug:
             time.sleep(2)
 
-            r = subprocess.run('python3 ../rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c1420 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + run_dict['NAME'] + '\'"', shell = True, stdout = subprocess.PIPE)
+            r = subprocess.run('python3 ../rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c1400 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + run_dict['NAME'] + '\'" -s 17', shell = True, stdout = subprocess.PIPE)
 
             status = 'Fail'
             if "ERROR" in str(r.stdout):
@@ -193,10 +203,10 @@ for csvfile in files:
                 n_failed += 1
                 csvfile_failed.write(filtered_rows.to_csv(index=False, header=False))
 
-        logger.info(f'Upload status for {bc}: {status}')
+        logger.info(f'   Upload status for {bc}: {status}\n')
 
     else:
-        logger.debug('No write required -> no checking')
+        logger.debug('No write required -> no checking\n')
 
     logger.info(f'Failed uploads: {n_failed}')
 
@@ -222,5 +232,3 @@ logger.debug('XML file content ========================================')
 if logginglevel == logging.DEBUG:
     with open(xmlfile, 'r') as f:
         print(f.read())
-
-
