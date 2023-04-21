@@ -428,20 +428,7 @@ def addAttributeToPart(barcode, attrs, user = None):
         attrValue = etree.SubElement(attr, "VALUE").text = value
     return myroot
 
-def reject(barcode):
-    path = '/tmp/' + str(time.time()) + '.xml'
-    xmlfile = open(path, 'w')
-    attrs = {
-        'Global Status': 'Rejected'
-        }
-    xml = addAttributeToPart(barcode, attrs)
-    xmlfile.write(mtdxml(xml))
-    xmlfile.close()
-#    writeToDB(filename = path)
-    os.remove(path)
-    return xml
-
-def xml2skip(barcodes, myroot = None, user = None):
+def xml2AssignAttributes(barcodes, attributes, myroot = None, user = None):
     if isinstance(barcodes, str):
         barcodes = [barcodes]
     if myroot == None:
@@ -454,10 +441,20 @@ def xml2skip(barcodes, myroot = None, user = None):
         bcode = etree.SubElement(part, 'BARCODE').text = barcode
         etree.SubElement(part, 'RECORD_INSERTION_USER').text = user
         attrs = etree.SubElement(part, 'PREDEFINED_ATTRIBUTES')
-        attr = etree.SubElement(attrs, 'ATTRIBUTE')
-        etree.SubElement(attr, 'NAME').text = 'Global Status'
-        etree.SubElement(attr, 'VALUE').text = 'Skipped'        
+        if isinstance(attributes, str):
+            jattributes = [json.loads(attributes)]
+        else:
+            jattributes = attributes
+        for a in jattributes:
+            for key,value in a.items():
+                attribute(attrs, key, value)            
     return myroot
+
+def xml2skip(barcodes, myroot = None, user = None):
+    return xml2AssignAttributes(barcodes, '{"Global Status": "Skipped"}', myroot, user)
+
+def xml2reject(barcodes, myroot = None, user = None):
+    return xml2AssignAttributes(barcodes, '{"Global Status": "Rejected"}', myroot, user)
 
 def xml2ship(barcodes, company = 'Some company', tracking_no = '0000-0001', myroot = None,
              user = None, date = None, from_institution = 'None', from_location = 'None',
