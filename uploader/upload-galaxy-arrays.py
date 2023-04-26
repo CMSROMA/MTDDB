@@ -75,6 +75,11 @@ files = glob.glob(uploaderconfig.DIRIN + f'/{inputdir}/*.csv')
 if debug:
     logger.debug(f'Looking for files in {uploaderconfig.DIRIN}/{inputdir}')
 
+# Create output dirs
+os.system(f"mkdir -p {uploaderconfig.DIRUPLOADED}/{inputdir}")
+os.system(f"mkdir -p {uploaderconfig.DIRFAILED}/{inputdir}")
+os.system(f"mkdir -p {uploaderconfig.DIRPROCESSED}/{inputdir}")
+
 csvHeader = "runName,id,time,L_bar_mu,L_bar_std,L_maxVar_LS,L_maxVar_LN,L_std_LS,L_std_LN,L_std_tot,L_max,L_mean,L_mean_std,L_mean_mitu,L_std_mitu,W_maxVar_LO,W_maxVar_LE,W_std_LO,W_std_LE,W_std_tot,W_max,W_mean,W_mean_std,W_mean_mitu,W_std_mitu,T_maxVar_FS,T_std_FS,T_max,T_mean,T_mean_std,T_mean_mitu,T_std_mitu,bar,bar_length,bar_length_std,type"
 
 # open tunnel to dbloader for rhapi query

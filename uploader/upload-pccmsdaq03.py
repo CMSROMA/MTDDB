@@ -79,6 +79,11 @@ files = glob.glob(uploaderconfig.DIRIN + f'/{inputdir}/*.csv')
 if debug:
     logger.debug(f'Looking for files in {uploaderconfig.DIRIN}/{inputdir}')
 
+# Create output dirs
+os.system(f"mkdir -p {uploaderconfig.DIRUPLOADED}/{inputdir}")
+os.system(f"mkdir -p {uploaderconfig.DIRFAILED}/{inputdir}")
+os.system(f"mkdir -p {uploaderconfig.DIRPROCESSED}/{inputdir}")
+
 # open tunnel to dbloader for query
 os.system('ssh -f -N -L 8113:dbloader-mtd.cern.ch:8113 mtdloadb@lxplus.cern.ch')
 
