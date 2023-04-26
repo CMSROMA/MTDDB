@@ -9,47 +9,22 @@ MTD database. For information about how to use it, just run it.
 '''
 
 import sys
+import subprocess
+import getpass
 import re
 import os
-import subprocess
 import getopt
 import logging
 from mtdConstructionDBTools import mtdcdb
 
-# configure logger
-'''
-logger = logging.getLogger(os.path.basename(__file__))
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-logginglevel = logging.INFO
-'''
-
 logger, logginglevel = mtdcdb.createLogger()
 
 shrtOpts, longOpts, helpOpts = mtdcdb.stdOptions()
+shrtOpts += 'f:'
+longOpts.append('file=')
+helpOpts.append('specify the name of a file containing parts to reject')
 
-'''
-shrtOpts = 'hb:x:o:wu:c:DiT:'
-longOpts = ['help', 'batch=', 'barcode=', 'output=', 'write', 'user=', 'comment=', 'debug',
-            'int2r', 'tunnel=']
-helpOpts = ['shows this help',
-            'specify the batch to which the part belongs',
-            'specify the barcode of the part',
-            'the filename of the XML output file',
-            'upload the XML file automatically at the end of the processing',
-            'the CERN username authorised to permanently write data to DB \n' +
-            '         (default to current username)',
-            'operator comments',            
-            'activate debugging mode',
-            'use test database int2r',
-            'tunnel user (default mtdloadb)'
-            ]
-'''
-
-hlp = ('Generates the XML file needed to set an MTD part as rejected.\n' 
+hlp = ('Generates the XML file needed to rejectd one or more of MTD parts.\n' 
        'In order to ship data to CERN, you may need to setup a tunnel as follows:\n'
        'ssh -L 50022:dbloader-mtd.cern.ch:22 <your-cern-username>@lxplus.cern.ch\n\n'
        'EXAMPLES:\n'
@@ -64,6 +39,7 @@ except Exception as excptn:
 # set defaults
 batchIngot = ''
 barcode = ''
+filename = ''
 xmlfile = os.path.basename(sys.argv[0]).replace('.py', '.xml')
 write = False
 username = None
@@ -98,9 +74,14 @@ for o, a in opts:
     elif o in ('-T', '--tunnel'):
         tunnelUser = a
         proxy = True
+    elif o in ('-f', '--file'):
+        filename = a
     else:
         assert False, 'unhandled option'
 
+if username == None:
+    username = getpass.getuser()
+    
 if tunnelUser == None:
     tunnelUser = username
 
@@ -121,12 +102,20 @@ else:
     logger.debug(f'Will NOT write to DB {database}')
 
 # make basic checks
-if barcode != '' and batchIngot != '':
-    logger.error('Cannot specify both barcode and batch: choose one')
+methods = 0
+if barcode != '':
+    methods += 1
+if batchIngot != '':
+    methods +=1
+if filename != '':
+    methods += 1
+    
+if methods > 1:
+    logger.error('Either you give a barcode, or a batch, or a filename')
     errors += 1
 
-if barcode == '' and batchIngot == '':
-    logger.error('Either barcode or batch must be specified')
+if methods == 0:
+    logger.error('Either one between barcode, batch or filename must be specified')
     errors += 1
 
 if errors != 0:
@@ -137,49 +126,52 @@ if os.path.exists(xmlfile):
                  '                             Please rename or remove it before proceeding')
     exit(-1)
 
-# prepare command
-command = 'python3 ./registerMTDPart.py'
-if barcode != '':
-    command += f' -x {barcode}'
-if write:
-    command += ' -w'
-if comment != '':
-    command += f' -c {comment}'
-if debug:
-    command += ' -D'
-if database == 'int2r':
-    command += ' -i'
-if tunnelUser != None:
-    command += f' -T {tunnelUser}'
-if username != None:
-    command += f' -u {username}'
-    
-command += f' -R'
+out = []
 
-# get list of parts, if needed
+if tunnelUser == username:
+    # open the tunnel even if we do not need to write the XML file. We need the
+    # tunnel to get info about the batch
+    if batchIngot != '':
+        mtdcdb.initiateSession(user = tunnelUser, write = True, debug = True)
+
+barcodes = []
+if filename!= '':
+    with open(filename) as f:
+        barcodes = f.read().splitlines()
+    
+if barcode != '':
+    barcodes.append(barcode)
+
 if batchIngot != '':
     query = f'python3 rhapi.py --url=http://localhost:8113 --all "select p.BARCODE from '
     query += f'mtd_{database}.parts p where p.BATCH_NUMBER = \'{batchIngot}\'"'
     logger.debug(f'{query}')
     p = subprocess.Popen(query, stdout=subprocess.PIPE, shell=True)
     out, err = p.communicate()
-    out = out.decode("utf-8").split('\n')
+    barcodes = out.decode("utf-8").split('\n')
     # remove head (BARCODE) and tail ('')
-    out.pop(0)
-    out.pop()
-    logger.debug('Rejecting the following parts:')
-    logger.debug(out)
-    answer = input('      Are you sure? [y/N] ')
+    if len(barcodes) > 0:
+        barcodes.pop(0)
+        barcodes.pop()
 
-    if answer in ('y', 'Y', 'yes', 'YES', 'Yes'):
-        for b in out:
-            xmlfileb = re.sub('.xml', f'-{b}.xml', xmlfile)
-            if len(b) == 13:
-                cmd = command + f' -x {b} -o {xmlfileb}'
-                os.system(cmd)
+reject = mtdcdb.xml2reject(barcodes, user = username)
 
-elif barcode != '':
-    command += f' -o {xmlfile}'
-    logger.debug(command)
-    os.system(command)
+logger.debug('Rejecting the following parts:')
+logger.debug(barcodes)
 
+if debug:
+    print(mtdcdb.mtdxml(skip))
+
+if write:
+    fxml = open(xmlfile, "w")
+    fxml.write(mtdcdb.mtdxml(reject))
+    fxml.close()
+    answer = input('Are you sure? [y/N] ')
+    if answer in ('y', 'Y', 'yes', 'YES', 'Yes') and len(reject) > 0:
+        tb = False
+        if database == 'int2r':
+            tb = True
+        mtdcdb.initiateSession(user = tunnelUser, write = True, debug = debug, proxy = proxy)
+        mtdcdb.writeToDB(filename = xmlfile, user = tunnelUser, testdb = tb, proxy = proxy)
+
+mtdcdb.terminateSession(user = tunnelUser)

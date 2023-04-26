@@ -20,12 +20,15 @@ from mtdConstructionDBTools import mtdcdb
 logger, logginglevel = mtdcdb.createLogger()
 
 shrtOpts, longOpts, helpOpts = mtdcdb.stdOptions()
+shrtOpts += 'f:'
+longOpts.append('file=')
+helpOpts.append('specify the name of a file containing the list of barcodes to skip')
 
 hlp = ('Generates the XML file needed to skip the measurements of an MTD part.\n' 
        'In order to ship data to CERN, you may need to setup a tunnel as follows:\n'
        'ssh -L 50022:dbloader-mtd.cern.ch:22 <your-cern-username>@lxplus.cern.ch\n\n'
        'EXAMPLES:\n'
-       './reject.py -x 33103000000834')
+       './skip.py -x 33103000000834')
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], shrtOpts, longOpts)
@@ -36,6 +39,7 @@ except Exception as excptn:
 # set defaults
 batchIngot = ''
 barcode = ''
+filename = ''
 xmlfile = os.path.basename(sys.argv[0]).replace('.py', '.xml')
 write = False
 username = None
@@ -70,6 +74,8 @@ for o, a in opts:
     elif o in ('-T', '--tunnel'):
         tunnelUser = a
         proxy = True
+    elif o in ('-f', '--file'):
+        filename = a        
     else:
         assert False, 'unhandled option'
 
@@ -83,9 +89,9 @@ if tunnelUser == None:
 logger.setLevel(logginglevel)
 logger.debug(f'Debugging mode ON')
 if barcode != '':
-    logger.debug(f'Rejecting part {barcode}')
+    logger.debug(f'Skipping part {barcode}')
 if batchIngot != '':
-    logger.debug(f'Rejecting parts in batch {batchIngot}')    
+    logger.debug(f'Skipping parts in batch {batchIngot}')    
 logger.debug(f'output on {xmlfile}')
 logger.debug(f'        Username: {username}')
 logger.debug(f'     Tunnel user: {tunnelUser}')
@@ -96,12 +102,20 @@ else:
     logger.debug(f'Will NOT write to DB {database}')
 
 # make basic checks
-if barcode != '' and batchIngot != '':
-    logger.error('Cannot specify both barcode and batch: choose one')
+methods = 0
+if barcode != '':
+    methods += 1
+if batchIngot != '':
+    methods +=1
+if filename != '':
+    methods += 1
+    
+if methods > 1:
+    logger.error('Either you give a barcode, or a batch, or a file name')
     errors += 1
 
-if barcode == '' and batchIngot == '':
-    logger.error('Either barcode or batch must be specified')
+if methods == 0:
+    logger.error('Either one between a barcode, a batch, or a file name must be provided')
     errors += 1
 
 if errors != 0:
@@ -120,9 +134,13 @@ if tunnelUser == username:
     if batchIngot != '':
         mtdcdb.initiateSession(user = tunnelUser, write = True, debug = True)
 
+barcodes = []
+if filename!= '':
+    with open(filename) as f:
+        barcodes = f.read().splitlines()
+        
 if barcode != '':
-    skip = mtdcdb.xml2skip(barcode, user = username)
-    out.append(barcode)
+    barcodes.append(barcode)
     
 if batchIngot != '':
     query = f'python3 rhapi.py --url=http://localhost:8113 --all "select p.BARCODE from '
@@ -130,18 +148,30 @@ if batchIngot != '':
     logger.debug(f'{query}')
     p = subprocess.Popen(query, stdout=subprocess.PIPE, shell=True)
     out, err = p.communicate()
-    out = out.decode("utf-8").split('\n')
+    barcodes = out.decode("utf-8").split('\n')
     # remove head (BARCODE) and tail ('')
-    out.pop(0)
-    out.pop()
-    skip = mtdcdb.xml2skip(out, user = username)
+    if len(barcodes) > 0: 
+        barcodes.pop(0)
+        barcodes.pop()
+
+skip = mtdcdb.xml2skip(barcodes, user = username)
 
 logger.debug('Skipping the following parts:')
-logger.debug(out)
-answer = input('      Are you sure? [y/N] ')
+logger.debug(barcodes)
 
-if answer in ('y', 'Y', 'yes', 'YES', 'Yes'):
+if debug:
     print(mtdcdb.mtdxml(skip))
 
-if tunnelUser == username:
-    mtdcdb.initiateSession(user = tunnelUser, write = write)
+if write:
+    fxml = open(xmlfile, "w")
+    fxml.write(mtdcdb.mtdxml(skip))
+    fxml.close()
+    answer = input('Are you sure? [y/N] ')
+    if answer in ('y', 'Y', 'yes', 'YES', 'Yes') and len(skip) > 0:
+        tb = False
+        if database == 'int2r':
+            tb = True
+        mtdcdb.initiateSession(user = tunnelUser, write = True, debug = True)
+        mtdcdb.writeToDB(filename = xmlfile, user = tunnelUser, testdb = tb, proxy = proxy)
+
+mtdcdb.terminateSession(user = tunnelUser)
