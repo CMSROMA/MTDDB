@@ -69,30 +69,34 @@ def opentunnel(user = None, port = 50022, debug = False):
             print('*** ERR *** Cannot open tunnel -- exiting...')
             exit(-1)
 
-def initiateSession(user = None, port = 50022, write = False, debug = False):
+def initiateSession(user = None, port = 50022, write = False, debug = False, proxy=True):
     if user == None:
         user = getpass.getuser()
     if debug:
         print(f'user = {user} port = {port} write = {write}')
-    if write and not 'cern.ch' in socket.getfqdn():
-        cmd = ['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost']
+    if write: 
         try:
             print('=== initiating session...')
-            if debug:
-                for subcmd in cmd:
-                    print(subcmd + ' ', end = '')
-                print()
-            subprocess.check_call(cmd)
+            #NB WHEN USING AUTHENTICATION VIA KERBEROS (KEYTAB) TUNNEL CANNOT BE USED! REMEMBER TO USE PROXY
+            if ( not proxy and not 'cern.ch' in socket.getfqdn()):		
+                cmd = ['ssh', '-M', '-p', str(port), '-N', '-f', user + '@localhost']
+                if debug:
+                    for subcmd in cmd:
+                        print(subcmd + ' ', end = '')
+                    print()
+                subprocess.check_call(cmd)
         except subprocess.CalledProcessError:
-            print('=== retrying to initiate a session...')
-            opentunnel(user, port, debug)
+            if ( not proxy):
+                print('=== retrying to initiate a session...')
+                opentunnel(user, port, debug)
 
-def terminateSession(user = None, port = 50022, write = False):
+def terminateSession(user = None, port = 50022, write = False, proxy=True):
     if write:
         if user == None:
             user = getpass.getuser()
         print('=== terminating session...')
-        cmd = ['ssh', '-O', 'exit', '-p', str(port), user + '@localhost']
+        if ( not proxy):
+            cmd = ['ssh', '-O', 'exit', '-p', str(port), user + '@localhost']
         if internalDebugging:
             for subcmd in cmd:
                 print(subcmd + ' ', end = '')
@@ -113,20 +117,19 @@ def mtdhelp(shrtOpts = '', longOpts = '', helpOpts = '', err = 0, hlp = ''):
     exit(err)
 
 def writeToDB(port = 50022, filename = 'filenotfound.xml', dryrun = False,
-              user = None, wait = 10, testdb = False, proxy = False):
+              user = None, wait = 10, testdb = False, proxy = True):
     dbname = 'cmsr'
     cmd = ['scp']
+    #NB WHEN USING AUTHENTICATION VIA KERBEROS (KEYTAB) TUNNEL CANNOT BE USED! REMEMBER TO USE PROXY
     if not proxy and not 'cern.ch' in socket.getfqdn():
         cmd.append(f'-P{port}')
-    sshTargetHost = 'localhost'
+        sshTargetHost = 'localhost'
+    if proxy:
+        cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
+        sshTargetHost = 'dbloader-mtd.cern.ch'
     if user == None:
         user = getpass.getuser()
     cmd.append('-oNoHostAuthenticationForLocalhost=yes')
-    if proxy:
-        sshTargetHost = 'dbloader-mtd.cern.ch'
-        cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
-    if 'cern.ch' in socket.getfqdn():
-        sshTargetHost = 'dbloader-mtd.cern.ch'
     cmd.append(filename)
     if not dryrun:
         xmlfile = os.path.basename(filename)
@@ -153,8 +156,8 @@ def writeToDB(port = 50022, filename = 'filenotfound.xml', dryrun = False,
         if proxy:
             cmd.append('-oProxyJump=' + user + '@lxtunnel.cern.ch')
         cmd.append('-oNoHostAuthenticationForLocalhost=yes')
-        if 'cern.ch' in socket.getfqdn():
-            sshTargetHost = 'dbloader-mtd.cern.ch'
+#        if 'cern.ch' in socket.getfqdn():
+#            sshTargetHost = 'dbloader-mtd.cern.ch'
         cmd.append(user + f'@{sshTargetHost}')
         remoteCommand = f'test -f /home/dbspool/logs/mtd/{dbname}/{xmlfile} && echo Done! || echo .;'
         rc = remoteCommand.split(' ')
