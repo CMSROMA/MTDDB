@@ -84,6 +84,7 @@ os.system('ssh -f -N -L 8113:dbloader-mtd.cern.ch:8113 mtdloadb@lxplus.cern.ch')
 csvHeader="runName,b_rms,producer,i1,i0,i3,i2,tag,decay_time,id,pe,lyRef,geometry,b_3s_asym,b_2s_asym,time,type,ly"
 for csvfile in files:
 
+
     # Initiate the session 
     mtdcdb.initiateSession(user = 'mtdloadb', write=True)
 
@@ -100,6 +101,8 @@ for csvfile in files:
         data = pd.read_csv(csvfile)
     else:
         data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) # if header is missing
+    # data = data.fillna('') #to remove nan if row is empty
+    
 
     # first get the different runs
     runs = data[csvHead]
@@ -134,18 +137,35 @@ for csvfile in files:
 
             bc = str(row['id'])
             barcode = str(row['id'])
-            if not 'FK' in barcode:
-                barcode = 'PRE{:010d}'.format(int(row['id']))
+            # if not 'FK' in barcode:
+            #     barcode = '{:010d}'.format(int(row['id']))
 
             # read data from csv
-
-            lyAbs = row['ly']/row['pe']
-            lyNorm = row['ly']/row['lyRef']
+            if pd.isna(row['pe']):  # check if 'pe' is empty
+                lyAbs = row['ly']
+            else:
+                lyAbs = row['ly']/row['pe']
+            # lyAbs = row['ly']/row['pe']
+            if pd.isna(row['lyRef']):  # check if 'lyRef' is empty
+                # lyNorm = row['ly']
+                lyNorm = 0.
+            else:
+                lyNorm = row['ly']/row['lyRef']
+                
             b_rms = row['b_rms']
             b_3s_asym = row['b_3s_asym']
             b_2s_asym = row['b_2s_asym']
             decay_time = row['decay_time']
 
+            if pd.isna(b_rms):
+                b_rms = 0.
+            if pd.isna(b_3s_asym):
+                b_3s_asym = 0.
+            if pd.isna(b_2s_asym):
+                b_2s_asym = 0.
+            if pd.isna(lyNorm):
+                lyNorm = 0.            
+              
         
             # prepare the dictionary
             xdata = [{'NAME': 'B_RMS',      'VALUE': b_rms},

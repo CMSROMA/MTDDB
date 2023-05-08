@@ -145,8 +145,8 @@ for csvfile in files:
         bc = str(row['id'])
         # format barcode, if needed
         barcode = f'{bc}'
-        if len(bc) < 14:
-            barcode = 'PRE'+f'{bc.zfill(10)}'
+        if len(bc) < 15:
+            barcode = f'{bc.zfill(10)}'
             if 'FK' in barcode:
                 barcode = f'{bc.zfill(10)}'
         #print(barcode)
@@ -249,7 +249,7 @@ for csvfile in files:
     logger.info(f'   File contains data for {len(data.index)} bars of matrix {bc}')
 
     # transfer data to DB
-    mtdcdb.initiateSession(user='mtdloadb')
+    mtdcdb.initiateSession(user='mtdloadb', write=True)
     if debug:
         print(mtdcdb.mtdxml(condition))
     mtdcdb.transfer(condition, dryrun=dryrun_, user='mtdloadb')
