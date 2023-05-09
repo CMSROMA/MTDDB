@@ -64,7 +64,7 @@ for o, a in opts:
         os.system(f'mv {uploaderconfig.DIRFAILED}/{inputdir}/*.csv {uploaderconfig.DIRIN}/{inputdir}/')
     elif o in ('-d', '--debug'):
         debug   = True
-        dryryb_ = True
+        dryrun_ = True
 
 if debug:
     logger.setLevel(logging.DEBUG)
@@ -82,14 +82,16 @@ os.system(f"mkdir -p {uploaderconfig.DIRPROCESSED}/{inputdir}")
 os.system('ssh -f -N -L 8113:dbloader-mtd.cern.ch:8113 mtdloadb@lxplus.cern.ch')
 
 csvHeader="runName,b_rms,producer,i1,i0,i3,i2,tag,decay_time,id,pe,lyRef,geometry,b_3s_asym,b_2s_asym,time,type,ly"
+csvHeader_split = csvHeader.split(",")
 for csvfile in files:
+
 
     # Initiate the session 
     mtdcdb.initiateSession(user = 'mtdloadb', write=True)
 
     # Open file for failed uploads
-    csvfile_succeded = open(uploaderconfig.DIRUPLOADED + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "a")
-    csvfile_failed   = open(uploaderconfig.DIRFAILED   + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "a")
+    csvfile_succeded = open(uploaderconfig.DIRUPLOADED + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "w")
+    csvfile_failed   = open(uploaderconfig.DIRFAILED   + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "w")
     n_failed = 0
 
     # get the content of the csv file
@@ -99,8 +101,11 @@ for csvfile in files:
     if "runName" in firstline:
         data = pd.read_csv(csvfile)
     else:
-        data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) # if header is missing
-
+        data = pd.read_csv(csvfile, header=None, names=csvHeader_split) # if header is missing
+    data['lyAbs'  ]    = data['ly']    / data['pe']
+    data['lyAbs'].fillna(data['ly'], inplace=True) # fill lyAbs with ly if the result of ly/pe is nan (because pe is missing)
+    data['lyNorm' ]    = data['lyAbs'] / data['lyRef' ]
+    
     # first get the different runs
     runs = data[csvHead]
     runSet = set(runs)
@@ -127,35 +132,28 @@ for csvfile in files:
                      'COMMENT': '',
                      'LOCATION': 'Roma/PMT'
         }
-        print("Entry Run Tag "+ run_dict['NAME'])
+        
         # Loop over bars in a run (one bar)
         for index, row in filtered_rows.iterrows():
             xdataset = {}
 
             bc = str(row['id'])
             barcode = str(row['id'])
-            if not 'FK' in barcode:
-                barcode = 'PRE{:010d}'.format(int(row['id']))
-
-            # read data from csv
-
-            lyAbs = row['ly']/row['pe']
-            lyNorm = row['ly']/row['lyRef']
-            b_rms = row['b_rms']
-            b_3s_asym = row['b_3s_asym']
-            b_2s_asym = row['b_2s_asym']
-            decay_time = row['decay_time']
-
         
-            # prepare the dictionary
-            xdata = [{'NAME': 'B_RMS',      'VALUE': b_rms},
-                     {'NAME': 'B_3S_ASYM',  'VALUE': b_3s_asym},
-                     {'NAME': 'B_2S_ASYM',  'VALUE': b_2s_asym},
-                     {'NAME': 'LY_ABS',     'VALUE': lyAbs},
-                     {'NAME': 'DECAY_TIME', 'VALUE': decay_time},
-                     {'NAME': 'LY_NORM',    'VALUE': lyNorm}]
+            omsVarNames = {
+                'b_rms'      : 'B_RMS',
+                'b_3s_asym' : 'B_3S_ASYM',
+                'b_2s_asym' : 'B_2S_ASYM',
+                'lyAbs'     : 'LY_ABS',
+                'lyNorm'  : 'LY_NORM',
+                'decay_time'   : 'DECAY_TIME',
+            }
 
-
+            # prepare dictionary
+            xdata = []
+            for var in omsVarNames.keys():
+                if pd.notna(row[var]):
+                    xdata.append({'NAME': omsVarNames[var], 'VALUE': row[var]})
                
             # pack data
             xdataset[barcode] = xdata
@@ -179,7 +177,9 @@ for csvfile in files:
         logger.info('Operation summary:')
         logger.info(f'Checking {barcode}')
     
-        if not debug:
+        if debug:
+            logger.debug('No write required -> no checking')
+        else:
             time.sleep(2)
 
             r = subprocess.run('python3 ../rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c1420 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + run_dict['NAME'] + '\'"', shell = True, stdout = subprocess.PIPE)
@@ -192,23 +192,20 @@ for csvfile in files:
 
             elif bc in str(r.stdout):
                 status = 'Success'
-                csvfile_succeded.write(filtered_rows.to_csv(index=False, header=False))
+                csvfile_succeded.write(filtered_rows[csvHeader_split].to_csv(index=False, header=False))
 
             if status != 'Success':
                 n_failed += 1
-                csvfile_failed.write(filtered_rows.to_csv(index=False, header=False))
+                csvfile_failed.write(filtered_rows[csvHeader_split].to_csv(index=False, header=False))
 
-        logger.info(f'Upload status for {bc}: {status}')
-
-    else:
-        logger.debug('No write required -> no checking')
-
-    logger.info(f'Failed uploads: {n_failed}')
+            logger.info(f'Upload status for {bc}: {status}')
+    if not debug:
+        logger.info(f'Failed uploads: {n_failed}')
 
     # move the processed file (remove retried uploads)
-    if retry_upload:
+    if retry_upload and debug==False:
         os.remove(csvfile)
-    else:
+    elif debug==False:
         csvfiledone = uploaderconfig.DIRPROCESSED + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1]
         logger.info(f'Moving {csvfile} to {csvfiledone}')
         os.rename(csvfile, csvfiledone)
@@ -216,16 +213,13 @@ for csvfile in files:
     # remove file of failed uploads if empty
     csvfile_failed.close()
     if os.path.getsize(csvfile_failed.name) == 0:
-        logger.info(f'   No failed uploads, removed file {csvfile_failed.name}')
+        logger.info(f'No failed uploads, removed file {csvfile_failed.name}')
         os.remove(csvfile_failed.name)    
 
-# search pid and close ssh tunnel
+# search pid and close all ssh tunnel
 tunnel_pid = subprocess.check_output(['pgrep', '-f', 'ssh.*8113:dbloader-mtd.cern.ch:8113'])
-os.kill(int(tunnel_pid), signal.SIGKILL)
-
-logger.debug('XML file content ========================================')
-if logginglevel == logging.DEBUG:
-    with open(xmlfile, 'r') as f:
-        print(f.read())
-
-
+tunnel_pid = tunnel_pid.decode("utf-8")
+pid_list = tunnel_pid.split("\n")
+for pid in pid_list:
+    if pid != '':
+        os.kill(int(pid), signal.SIGKILL)
