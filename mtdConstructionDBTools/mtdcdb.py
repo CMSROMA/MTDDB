@@ -368,7 +368,8 @@ def addDataSet(parent, dataset):
                 ad.update({k.upper(): v})
             name = ad['NAME']
             if 'VALUE' in ad:
-                etree.SubElement(data, name).text = str(ad['VALUE'])
+                if len(ad['VALUE']) > 0:
+                    etree.SubElement(data, name).text = str(ad['VALUE'])
 
 '''                
 def condition(cmntroot, barcode, condition_name, condition_dataset, run = None, location = None,
