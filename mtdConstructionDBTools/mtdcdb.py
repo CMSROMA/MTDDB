@@ -335,7 +335,7 @@ def newrun(condition, run = {}, begin = None, end = None):
     etree.SubElement(runElem, "RUN_END_TIMESTAMP").text = end
     if 'COMMENT' in run.keys() and str(run['COMMENT']) != '':
         etree.SubElement(runElem, "COMMENT_DESCRIPTION").text = run['COMMENT']
-    if str(run['LOCATION']) != '':
+    if 'LOCATION' in run.keys() and str(run['LOCATION']) != '':
         etree.SubElement(runElem, "LOCATION").text = run['LOCATION']
     if not 'USER' in run or str(run['USER']) == '':
         run['USER'] = getpass.getuser()
@@ -363,12 +363,16 @@ def addDataSet(parent, dataset):
         etree.SubElement(part, "BARCODE").text = barcode
         data = etree.SubElement(ds, "DATA")
         actualData = dataset[barcode]
+        normalisedData = []
         for ad in actualData:
+            adnew = {}
             for k,v in ad.items():
-                ad.update({k.upper(): v})
+                adnew[k.upper()] = v
+            normalisedData.append(adnew)
+        for ad in normalisedData:
             name = ad['NAME']
             if 'VALUE' in ad:
-                if len(ad['VALUE']) > 0:
+                if len(str(ad['VALUE'])) > 0:
                     etree.SubElement(data, name).text = str(ad['VALUE'])
 
 '''                
@@ -407,10 +411,8 @@ def addVisualInspectionComment(cmntroot, barcode, comment = '', location = None,
     conditionDataset = { barcode: [{"name": "OPERATORCOMMENT", "value": comment},
                                    {"name": "BATCH_INGOT_DATA","value": pdata}]
     }
-    run = { 'type': 'VISUAL_INSPECTION' }
-    aComment = newCondition(cmntroot, 'PARTREGISTRATION', conditionDataset,
-                            run_type = 'VISUAL_INSPECTION', location = location,
-                            comment = description)
+    run = { 'TYPE': 'VISUAL_INSPECTION', 'NAME': 'None' }
+    aComment = newCondition(cmntroot, 'PARTREGISTRATION', conditionDataset, run = run)
 
 def allowedTypes():
     aTypes = ['singleBarCrystal', 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',

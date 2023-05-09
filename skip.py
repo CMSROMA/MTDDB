@@ -159,6 +159,10 @@ skip = mtdcdb.xml2skip(barcodes, user = username)
 logger.debug('Skipping the following parts:')
 logger.debug(barcodes)
 
+if comment != '':
+    for bc in barcodes:
+        mtdcdb.addVisualInspectionComment(skip, bc, comment = comment)
+
 if debug:
     print(mtdcdb.mtdxml(skip))
 
