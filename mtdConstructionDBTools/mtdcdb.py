@@ -412,7 +412,7 @@ def addVisualInspectionComment(cmntroot, barcode, comment = '', location = None,
                                    {"name": "BATCH_INGOT_DATA","value": pdata}]
     }
     run = { 'TYPE': 'VISUAL_INSPECTION', 'NAME': 'None' }
-    aComment = newCondition(cmntroot, 'PARTREGISTRATION', conditionDataset, run = run)
+    aComment = newCondition(cmntroot, 'PART_REGISTRATION', conditionDataset, run = run)
 
 def allowedTypes():
     aTypes = ['singleBarCrystal', 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',

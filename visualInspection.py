@@ -1,10 +1,10 @@
 '''
 
-reject.py
+visualInspection.py
 author: giovanni.organtini@roma1.infn.it 2023
 
-This script is used to generate the XML code needed to reject parts in the
-MTD database. For information about how to use it, just run it.
+This script is used to generate the XML code needed to add comments to a previously
+registered part in the MTD database. For information about how to use it, just run it.
 
 '''
 
@@ -22,13 +22,14 @@ logger, logginglevel = mtdcdb.createLogger()
 shrtOpts, longOpts, helpOpts = mtdcdb.stdOptions()
 shrtOpts += 'f:'
 longOpts.append('file=')
-helpOpts.append('specify the name of a file containing parts to reject')
+helpOpts.append('specify the name of a file containing the list of barcodes to skip')
 
-hlp = ('Generates the XML file needed to rejectd one or more of MTD parts.\n' 
+hlp = ('Generates the XML file needed to add visualInspection results to a part which\n'
+       'has been already registered in the DB.\n'
        'In order to ship data to CERN, you may need to setup a tunnel as follows:\n'
        'ssh -L 50022:dbloader-mtd.cern.ch:22 <your-cern-username>@lxplus.cern.ch\n\n'
        'EXAMPLES:\n'
-       './reject.py -x 33103000000834')
+       './visualInspection -x 33103000000834 -c ''comment''')
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], shrtOpts, longOpts)
@@ -75,7 +76,7 @@ for o, a in opts:
         tunnelUser = a
         proxy = True
     elif o in ('-f', '--file'):
-        filename = a
+        filename = a        
     else:
         assert False, 'unhandled option'
 
@@ -89,9 +90,9 @@ if tunnelUser == None:
 logger.setLevel(logginglevel)
 logger.debug(f'Debugging mode ON')
 if barcode != '':
-    logger.debug(f'Rejecting part {barcode}')
+    logger.debug(f'Adding comments to part {barcode}')
 if batchIngot != '':
-    logger.debug(f'Rejecting parts in batch {batchIngot}')    
+    logger.debug(f'Adding comments to parts in batch {batchIngot}')    
 logger.debug(f'output on {xmlfile}')
 logger.debug(f'        Username: {username}')
 logger.debug(f'     Tunnel user: {tunnelUser}')
@@ -111,11 +112,15 @@ if filename != '':
     methods += 1
     
 if methods > 1:
-    logger.error('Either you give a barcode, or a batch, or a filename')
+    logger.error('Either you give a barcode, or a batch, or a file name')
     errors += 1
 
 if methods == 0:
-    logger.error('Either one between barcode, batch or filename must be specified')
+    logger.error('Either one between a barcode, a batch, or a file name must be provided')
+    errors += 1
+
+if comment == '':
+    logger.error('Provide at least a comment')
     errors += 1
 
 if errors != 0:
@@ -135,13 +140,16 @@ if tunnelUser == username:
         mtdcdb.initiateSession(user = tunnelUser, write = True, debug = True)
 
 barcodes = []
+comments = []
 if filename!= '':
-    with open(filename) as f:
-        barcodes = f.read().splitlines()
-    
+    data = pd.read_csv(filename)
+    barcodes = data['barcode']
+    comments = data['comment']
+        
 if barcode != '':
     barcodes.append(barcode)
-
+    comments.append(comment)
+    
 if batchIngot != '':
     query = f'python3 rhapi.py --url=http://localhost:8113 --all "select p.BARCODE from '
     query += f'mtd_{database}.parts p where p.BATCH_NUMBER = \'{batchIngot}\'"'
@@ -150,32 +158,32 @@ if batchIngot != '':
     out, err = p.communicate()
     barcodes = out.decode("utf-8").split('\n')
     # remove head (BARCODE) and tail ('')
-    if len(barcodes) > 0:
+    if len(barcodes) > 0: 
         barcodes.pop(0)
         barcodes.pop()
+    for i in range(len(barcodes)):
+        comments.append(comment)
 
-reject = mtdcdb.xml2reject(barcodes, user = username)
+visualInspection = mtdcdb.root()
 
-logger.debug('Rejecting the following parts:')
-logger.debug(barcodes)
-
-if comment != '':
-    for bc in barcodes:
-        mtdcdb.addVisualInspectionComment(reject, bc, comment = comment)
+for bc,comment in zip(barcodes, comments):
+    logger.debug(f'Setting comment "{comment}" for barcode {bc}')
+    if len(bc) > 0:
+        mtdcdb.addVisualInspectionComment(visualInspection, bc, comment = comment)
 
 if debug:
-    print(mtdcdb.mtdxml(reject))
+    print(mtdcdb.mtdxml(visualInspection))
 
 if write:
     fxml = open(xmlfile, "w")
-    fxml.write(mtdcdb.mtdxml(reject))
+    fxml.write(mtdcdb.mtdxml(visualInspection))
     fxml.close()
     answer = input('Are you sure? [y/N] ')
-    if answer in ('y', 'Y', 'yes', 'YES', 'Yes') and len(reject) > 0:
+    if answer in ('y', 'Y', 'yes', 'YES', 'Yes') and len(visualInspection) > 0:
         tb = False
         if database == 'int2r':
             tb = True
-        mtdcdb.initiateSession(user = tunnelUser, write = True, debug = debug, proxy = proxy)
+#        mtdcdb.initiateSession(user = tunnelUser, write = True, debug = True)
         mtdcdb.writeToDB(filename = xmlfile, user = tunnelUser, testdb = tb, proxy = proxy)
 
 mtdcdb.terminateSession(user = tunnelUser)
