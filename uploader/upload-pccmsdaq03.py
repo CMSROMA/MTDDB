@@ -70,8 +70,7 @@ for o, a in opts:
         os.system(f'mv {uploaderconfig.DIRFAILED}/{inputdir}/*.csv {uploaderconfig.DIRIN}/{inputdir}/')
     elif o in ('-d', '--debug'):
         debug   = True
-        dryryb_ = True
-
+        dryrun_ = True
 if debug:
     logger.setLevel(logging.DEBUG)
 
@@ -88,6 +87,7 @@ os.system(f"mkdir -p {uploaderconfig.DIRPROCESSED}/{inputdir}")
 os.system('ssh -f -N -L 8113:dbloader-mtd.cern.ch:8113 mtdloadb@lxplus.cern.ch')
 
 csvHeader = "tag,producer,type,id,geometry,runName,temp,bar,posX,posY,ly,ctr,sigmaT,err_sigmaT,lyRef,ctrRef,sigmaTRef,xtLeft,xtRight" 
+csvHeader_split = csvHeader.split(",")
 for csvfile in files:
 
     # get the content of the csv file
@@ -97,7 +97,10 @@ for csvfile in files:
     if "runName" in firstline:
         data = pd.read_csv(csvfile)
     else:
-        data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) #  if header is missing
+        data = pd.read_csv(csvfile, header=None, names=csvHeader_split) #  if header is missing
+    data['ctr_norm']    = data['ctr'] / data['ctrRef']
+    data['ly_norm' ]    = data['ly' ] / data['lyRef' ]
+    data['sigmaT_norm'] = data['sigmaT'] / data['sigmaTRef']
 
     # first get the different runs
     runs = data[csvHead]
@@ -107,8 +110,8 @@ for csvfile in files:
     mtdcdb.initiateSession(user='mtdloadb', write=True)
 
     # Open file for failed uploads
-    csvfile_succeded = open(uploaderconfig.DIRUPLOADED + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "a")
-    csvfile_failed   = open(uploaderconfig.DIRFAILED   + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "a")
+    csvfile_succeded = open(uploaderconfig.DIRUPLOADED + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "w")
+    csvfile_failed   = open(uploaderconfig.DIRFAILED   + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1] , "w")
     n_failed = 0
 
     # Iterate over runs (one run for each array) :
@@ -126,13 +129,12 @@ for csvfile in files:
         logger.info(f'   File contains run {run} started on {run_begin}')
 
         # TBC ============== from here =========================================
-
         # get run info from the csv file
         run_dict = { 'NAME': run,
                      'TYPE': 'ARRAY',
                      'NUMBER': -1,
                      'COMMENT': '',
-                     'LOCATION': 'Roma/ARRAY'
+                     'LOCATION': 'CMS Roma Lab/ARRAY'
                  }
 
         bc = ''
@@ -144,36 +146,31 @@ for csvfile in files:
 
             # format barcode, if needed
             barcode = f'{bc}-{bar}'
-            if len(bc) < 14:
-                barcode = 'PRE'+f'{bc.zfill(10)}-{bar}'
+            if len(bc) < 15:
+                barcode = f'{bc.zfill(10)}-{bar}'
                 if 'FK' in barcode:
                     barcode = f'{bc.zfill(10)}-{bar}'
-            
-            # read data from csv
-            lyAbs = row['ly']
-            lyNorm = lyAbs/row['lyRef']
-            ctr = row['ctr']
-            ctr_norm = ctr/row['ctrRef']
-            sigma_t = row['sigmaT']
-            sigma_t_norm = sigma_t/row['sigmaTRef']
-            temperature = row['temp']
-            xtLeft = row['xtLeft']
-            xtRight = row['xtRight']
-        
-            # prepare the dictionary
-            xdata = [{'NAME': 'CTR',          'VALUE': ctr},
-                     {'NAME': 'CTR_NORM',     'VALUE': ctr_norm},
-                     {'NAME': 'TEMPERATURE',  'VALUE': temperature},
-                     {'NAME': 'XTLEFT',       'VALUE': xtLeft},
-                     {'NAME': 'XTRIGHT',      'VALUE': xtRight},
-                     {'NAME': 'LY',           'VALUE': lyAbs},                     
-                     {'NAME': 'LY_NORM',      'VALUE': lyNorm},
-                     {'NAME': 'SIGMA_T',      'VALUE': sigma_t},
-                     {'NAME': 'SIGMA_T_NORM', 'VALUE': sigma_t_norm}]
-                
+
+            omsVarNames = {
+                'ctr'      : 'CTR', 
+                'ctr_norm' : 'CTR_NORM', 
+                'temp'     : 'TEMPERATURE', 
+                'xtLeft'   : 'XTLEFT', 
+                'xtRight'  : 'XTRIGHT', 
+                'ly'       : 'LY', 
+                'ly_norm'  : 'LY_NORM',
+                'sigmaT'   : 'SIGMA_T', 
+                'sigmaT_norm' : 'SIGMAT_NORM',
+            }
+
+            # prepare dictionary
+            xdata = []
+            for var in omsVarNames.keys():
+                if pd.notna(row[var]):
+                    xdata.append({'NAME': omsVarNames[var], 'VALUE': row[var]})
+
             # pack data
             xdataset[barcode] = xdata
-            #print(xdataset)
             condition = mtdcdb.newCondition(root, 'LY XTALK', xdataset, run = run_dict,
                                             runBegin = run_begin)
             
@@ -191,7 +188,9 @@ for csvfile in files:
         logger.info('Operation summary:')
         logger.info(f'Checking {bc}')
     
-        if not debug:
+        if debug:
+            logger.debug('No write required -> no checking')
+        else:
             time.sleep(2)
 
             r = subprocess.run('python3 ../rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c1400 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + run_dict['NAME'] + '\'" -s 17', shell = True, stdout = subprocess.PIPE)
@@ -204,23 +203,21 @@ for csvfile in files:
 
             elif bc in str(r.stdout):
                 status = 'Success'
-                csvfile_succeded.write(filtered_rows.to_csv(index=False, header=False))
+                csvfile_succeded.write(filtered_rows[csvHeader_split].to_csv(index=False, header=False))
 
             if status != 'Success':
                 n_failed += 1
-                csvfile_failed.write(filtered_rows.to_csv(index=False, header=False))
+                csvfile_failed.write(filtered_rows[csvHeader_split].to_csv(index=False, header=False))
 
-        logger.info(f'Upload status for {bc}: {status}')
-
-    else:
-        logger.debug('No write required -> no checking')
-
-    logger.info(f'Failed uploads: {n_failed}')
+            logger.info(f'Upload status for {bc}: {status}')
+    
+    if not debug:
+        logger.info(f'Failed uploads: {n_failed}')
 
     # move the processed file (remove retried uploads)
-    if retry_upload:
+    if retry_upload and debug == False:
         os.remove(csvfile)
-    else:
+    elif debug == False:
         csvfiledone = uploaderconfig.DIRPROCESSED + f'/{inputdir}/' + csvfile.split(os.path.sep)[-1]
         logger.info(f'Moving {csvfile} to {csvfiledone}')
         os.rename(csvfile, csvfiledone)
@@ -228,14 +225,13 @@ for csvfile in files:
     # remove file of failed uploads if empty
     csvfile_failed.close()
     if os.path.getsize(csvfile_failed.name) == 0:
-        logger.info(f'   No failed uploads, removed file {csvfile_failed.name}')
+        logger.info(f'No failed uploads, removed file {csvfile_failed.name}')
         os.remove(csvfile_failed.name)    
 
-# search pid and close ssh tunnel
+# search pid and close all ssh tunnel
 tunnel_pid = subprocess.check_output(['pgrep', '-f', 'ssh.*8113:dbloader-mtd.cern.ch:8113'])
-os.kill(int(tunnel_pid), signal.SIGKILL)
-
-logger.debug('XML file content ========================================')
-if logginglevel == logging.DEBUG:
-    with open(xmlfile, 'r') as f:
-        print(f.read())
+tunnel_pid = tunnel_pid.decode("utf-8")
+pid_list = tunnel_pid.split("\n")
+for pid in pid_list:
+    if pid != '':
+        os.kill(int(pid), signal.SIGKILL)

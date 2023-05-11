@@ -65,7 +65,7 @@ for o, a in opts:
         os.system(f'mv {uploaderconfig.DIRFAILED}/{inputdir}/*.csv {uploaderconfig.DIRIN}/{inputdir}/')
     elif o in ('-d', '--debug'):
         debug   = True
-        dryryb_ = True
+        dryrun_ = True
 
 if debug:
     logger.setLevel(logging.DEBUG)
@@ -92,10 +92,8 @@ for csvfile in files:
     # Check if header is missing
     if "runName" in firstline:
         data = pd.read_csv(csvfile)
-        print("Header Found")
     else:
         data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) #  if header is missing
-        print("Header Not Found")
 
     # THERE IS ONLY ONE RUN IN EACH FILE FOR THE GALAXY BENCH BY DESIGN
     runs = data['runName']
@@ -106,20 +104,11 @@ for csvfile in files:
         exit(-1)
 
     run = list(runSet)[0]
-    run_begin = None
-
     run_begin = data.iloc[0]['time']
-    print(run_begin)
 
     # convert date from string to datetime
     run_begin = datetime.strptime(run_begin, '%Y-%m-%d-%H-%M') #in use time format
     run_begin = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(run_begin.timestamp()))
-
-    # m = re.search('_[0-2]{4}-[0-2]{2}-[0-2]{2}-[0-2]{2}-[0-2]{2}-[0-2]{2}', run)
-
-    # run_begin = m.group(0)
-    # run_begin = re.sub('_', '', run_begin)
-    # run_begin = re.sub('-([0-2]{2})-([0-2]{2})-([0-2]{2})$', ' \\1:\\2:\\3', run_begin)
 
     logger.info(f'   File contains run {run} started on {run_begin}')
 
@@ -147,27 +136,20 @@ for csvfile in files:
         print(barcode)
         # read data from csv
 
-        #++++++++++++++++++++++++++++++
-        #      GALAXY  BARS
-        #++++++++++++++++++++++++++++++
-
-        L_mean = row['L_mean']
-        L_mean_std = row['L_mean_std']
-        W_mean = row['W_mean']
-        W_mean_std = row['W_mean_std']
-        T_mean = row['T_mean']
-        T_mean_std = row['T_mean_std']
+        omsVarNames = {
+            'L_mean'    : 'L_MEAN',
+            'L_mean_std': 'L_MEAN_STD',
+            'W_mean'    : 'W_MEAN',
+            'W_mean_std': 'W_MEAN_STD',
+            'T_mean'    : 'T_MEAN',
+            'T_mean_std': 'T_MEAN_STD',
+        } 
 
         # prepare the dictionary
-
-
-        xdata = [{'NAME': 'L_MEAN', 'VALUE': L_mean},
-                 {'NAME': 'L_MEAN_STD',    'VALUE': L_mean_std},
-                 {'NAME': 'W_MEAN', 'VALUE': W_mean},
-                 {'NAME': 'W_MEAN_STD',    'VALUE': W_mean_std},
-                 {'NAME': 'T_MEAN', 'VALUE': T_mean},
-                 {'NAME': 'T_MEAN_STD',    'VALUE': T_mean_std}]
-
+        xdata = []
+        for var in omsVarNames.keys():
+            if pd.notna(row[var]):
+                xdata.append({'NAME': omsVarNames[var], 'VALUE': row[var]})
 
         # pack data
         xdataset[barcode] = xdata
@@ -193,7 +175,9 @@ for csvfile in files:
     logger.info('Operation summary:')
     logger.info(f'Checking {barcode}')
     
-    if not debug:
+    if debug:
+        logger.debug('No write required -> no checking')
+    else:
         time.sleep(2)
 
         r = subprocess.run('python3 ../rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c3400 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + data['runName'] + '\'" ', shell = True, stdout = subprocess.PIPE)
@@ -230,18 +214,10 @@ for csvfile in files:
 
         logger.info(f'Upload status for {barcode}:  {status}')
 
-    else:
-        logger.debug('No write required -> no checking')
-
-# search pid and close ssh tunnel
+# search pid and close all ssh tunnel
 tunnel_pid = subprocess.check_output(['pgrep', '-f', 'ssh.*8113:dbloader-mtd.cern.ch:8113'])
-os.kill(int(tunnel_pid), signal.SIGKILL)
-    
-logger.debug('XML file content ========================================')
-if logginglevel == logging.DEBUG:
-    with open(xmlfile, 'r') as f:
-        print(f.read())
-
-
-
-
+tunnel_pid = tunnel_pid.decode("utf-8")
+pid_list = tunnel_pid.split("\n")
+for pid in pid_list:
+    if pid != '':
+        os.kill(int(pid), signal.SIGKILL)
