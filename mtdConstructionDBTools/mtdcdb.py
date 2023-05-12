@@ -300,7 +300,7 @@ def mtdcreateMatrix(parts, barcode, Xtaltype, manufacturer, batchIngot, laborato
 helpers to create conditions
 '''
 def newCondition(cmntroot, condition_name, condition_dataset, run,
-                 runBegin = None, runEnd = None):
+                 runBegin = None, runEnd = None, version = None):
     if cmntroot == None:
         cmntroot = root()
     if 'TYPE' in run.keys() and str(run['TYPE']) == None:
@@ -315,7 +315,7 @@ def newCondition(cmntroot, condition_name, condition_dataset, run,
     etree.SubElement(cond_type, "EXTENSION_TABLE_NAME").text = extensionTableName.replace(' ', '_')
     runElem = newrun(header, run, begin = runBegin, end = runEnd)
     header.append(runElem)
-    addDataSet(cmntroot, condition_dataset)
+    addDataSet(cmntroot, condition_dataset, version)
     return cmntroot
 
 def newrun(condition, run = {}, begin = None, end = None):
@@ -356,11 +356,13 @@ def visualInspectionComment(part_id, comment, user = None, time = None, location
     return 0
 '''
 
-def addDataSet(parent, dataset):
+def addDataSet(parent, dataset, version = None):
     for barcode in dataset:
         ds = etree.SubElement(parent, "DATA_SET")
         part = etree.SubElement(ds, "PART")
         etree.SubElement(part, "BARCODE").text = barcode
+        if version != None:
+            vers = etree.SubElement(ds, "VERSION").text = str(version)
         data = etree.SubElement(ds, "DATA")
         actualData = dataset[barcode]
         normalisedData = []
