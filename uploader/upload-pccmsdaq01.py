@@ -7,6 +7,7 @@ Automatically upload data stored after the measurement on the ARRAY bench (4 arr
 
 from mtdConstructionDBTools import mtdcdb
 import pandas as pd
+import numpy as np
 import time
 import re
 import sys
@@ -98,9 +99,9 @@ for csvfile in files:
         data = pd.read_csv(csvfile)
     else:
         data = pd.read_csv(csvfile, header=None, names=csvHeader_split) #  if header is missing
-    data['ctr_norm']    = data['ctr'] / data['ctrRef']
-    data['ly_norm' ]    = data['ly' ] / data['lyRef' ]
-    data['sigmaT_norm'] = data['sigmaT'] / data['sigmaTRef']
+    
+    for var in ['ctr','ly','sigmaT']:
+        data[f'{var}_norm'] = np.where( data[var]>0, data[var] / data[f'{var}Ref'], -999)
 
     # first get the different runs
     runs = data[csvHead]
@@ -146,8 +147,8 @@ for csvfile in files:
 
             # format barcode, if needed
             barcode = f'{bc}-{bar}'
-            if len(bc) < 15:
-                barcode = f'{bc.zfill(10)}-{bar}'
+            if len(bc) < 14:
+                barcode = f'3211{bc.zfill(10)}-{bar}'
                 if 'FK' in barcode:
                     barcode = f'{bc.zfill(10)}-{bar}'
 
@@ -160,7 +161,7 @@ for csvfile in files:
                 'ly'       : 'LY', 
                 'ly_norm'  : 'LY_NORM',
                 'sigmaT'   : 'SIGMA_T', 
-                'sigmaT_norm' : 'SIGMAT_NORM',
+                'sigmaT_norm' : 'SIGMA_T_NORM',
             }
 
             # prepare dictionary
@@ -193,7 +194,7 @@ for csvfile in files:
         else:
             time.sleep(2)
 
-            r = subprocess.run('python3 ../rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c1400 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + run_dict['NAME'] + '\'" -s 17', shell = True, stdout = subprocess.PIPE)
+            r = subprocess.run('python3 /home/cmsdaq/MTDDB/rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c1400 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + run_dict['NAME'] + '\'" -s 17', shell = True, stdout = subprocess.PIPE)
 
             status = 'Fail'
             if "ERROR" in str(r.stdout):

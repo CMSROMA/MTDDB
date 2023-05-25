@@ -139,6 +139,10 @@ for csvfile in files:
 
             bc = str(row['id'])
             barcode = str(row['id'])
+            if len(bc) < 14:
+                barcode = f'32110001{bc}' # new format for production
+                if 'FK' in barcode:
+                    barcode = f'{bc.zfill(10)}'
         
             omsVarNames = {
                 'b_rms'      : 'B_RMS',
@@ -182,7 +186,7 @@ for csvfile in files:
         else:
             time.sleep(2)
 
-            r = subprocess.run('python3 ../rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c1420 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + run_dict['NAME'] + '\'"', shell = True, stdout = subprocess.PIPE)
+            r = subprocess.run('python3 /home/cmsdaq/MTDDB/rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c1420 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + run_dict['NAME'] + '\'"', shell = True, stdout = subprocess.PIPE)
 
             status = 'Fail'
             if "ERROR" in str(r.stdout):

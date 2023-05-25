@@ -95,11 +95,10 @@ for csvfile in files:
         data = pd.read_csv(csvfile)
     else:
         data = pd.read_csv(csvfile, header=None, names=csvHeader.split(",")) #  if header is missing
-    print(data)
+
     # THERE IS ONLY ONE RUN IN EACH FILE FOR THE GALAXY BENCH BY DESIGN
     runs = data['runName']
     runSet = set(runs)
-    print(runSet)
     if len(runSet) != 1:
         logger.error(f'   There were {len(runSet)} runs on this file')
         exit(-1)
@@ -124,21 +123,23 @@ for csvfile in files:
                  'TYPE': 'Galaxy3D',
                  'NUMBER': -1,
                  'COMMENT': '',
-                 'LOCATION': 'Roma/Galaxy3D'
+                 'LOCATION': 'Roma/ARRAY'
              }
 
     bc = ''
     xdataset = {}
     for index, row in data.iterrows():
-        #xdataset = {}
-        bc = str(row['id'])
+
         # format barcode, if needed
+        bc = str(row['id'])
         barcode = f'{bc}'
-        if len(bc) < 15:
+        if len(bc) < 14:
             barcode = f'{bc.zfill(10)}'
             if 'FK' in barcode:
                 barcode = f'{bc.zfill(10)}'
-    
+        if row['type'] == 'array':
+            barcode += '-'+str(int(row['bar']))
+
         omsVarNames = {
             'L_bar_mu'    : 'BARLENGTH', 
             'L_bar_std'   : 'BARLENGTH_STD', 
@@ -152,7 +153,7 @@ for csvfile in files:
             'W_maxVar_LO' : 'WMAXVAR_LO', 
             'W_maxVar_LE' : 'WMAXVAR_LE', 
             'W_std_LO'    : 'WMAXVAR_LO_STD', 
-            'W_std_LE'    : 'WMAXVAR_LE_ST<D', 
+            'W_std_LE'    : 'WMAXVAR_LE_STD', 
             'W_max'       : 'W_MAX', 
             'W_mean'      : 'W_MEAN', 
             'W_mean_std'  : 'W_MEAN_STD', 
@@ -161,6 +162,7 @@ for csvfile in files:
             'T_max'       : 'T_MAX', 
             'T_mean'      : 'T_MEAN', 
             'T_mean_std'  : 'T_MEAN_STD',
+            'bar_length'  : 'BARLENGTH',
         }
         
  	    # prepare the dictionary
@@ -168,9 +170,9 @@ for csvfile in files:
         for var in omsVarNames.keys():
             if pd.notna(row[var]):
                 xdata.append({'NAME': omsVarNames[var], 'VALUE': row[var]})
-
         # pack data
-        xdataset[barcode] = xdata
+        if xdata != []:
+            xdataset[barcode] = xdata
 
     condition = mtdcdb.newCondition(root, 'XTAL DIMENSIONS', xdataset, run = run_dict,
                                         runBegin = run_begin)

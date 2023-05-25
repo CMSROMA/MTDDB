@@ -130,12 +130,14 @@ for csvfile in files:
         bar = str(row['id'])
 
         # format barcode, if needed
-        barcode = str(row['id'])
-        if not 'FK' in barcode:
-            barcode = 'PRE{:010d}'.format(int(row['id']))
-        print(barcode)
-        # read data from csv
+        bc = str(row['id'])
+        barcode = f'{bc}'
+        if len(bc) < 14:
+            barcode = f'32110001{bc}'
+            if 'FK' in barcode:
+                barcode = f'{bc.zfill(10)}'
 
+        # read data from csv
         omsVarNames = {
             'L_mean'    : 'L_MEAN',
             'L_mean_std': 'L_MEAN_STD',
