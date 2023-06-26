@@ -464,7 +464,7 @@ def xml2skip(barcodes, myroot = None, user = None):
 def xml2reject(barcodes, myroot = None, user = None):
     return xml2AssignAttributes(barcodes, '{"Global Status": "Rejected"}', myroot, user)
 
-def xml2ship(barcodes, company = 'Some company', tracking_no = '0000-0001', myroot = None,
+def xml2ship(barcodes, company = 'Some company', tracking_no = None, myroot = None,
              user = None, date = None, from_institution = 'None', from_location = 'None',
              to_institution = 'None', to_location = 'None'):
     shipments = None
@@ -473,6 +473,8 @@ def xml2ship(barcodes, company = 'Some company', tracking_no = '0000-0001', myro
         shipments = etree.SubElement(myroot, 'SHIPMENTS')
     shipment = etree.SubElement(shipments, 'SHIPMENT')
     company = etree.SubElement(shipment, "COMPANY_NAME").text = company
+    if tracking_no == None:
+        tracking_no = str(datetime.now())
     tracking_no = etree.SubElement(shipment, "TRACKING_NUMBER").text = tracking_no
     status = etree.SubElement(shipment, "STATUS").text = 'SHIPPED'
     if user == None:
