@@ -104,7 +104,7 @@ for csvfile in files:
         data = pd.read_csv(csvfile, header=None, names=csvHeader_split) # if header is missing
     data['lyAbs'  ]    = data['ly']    / data['pe']
     data['lyAbs'].fillna(data['ly'], inplace=True) # fill lyAbs with ly if the result of ly/pe is nan (because pe is missing)
-    data['lyNorm' ]    = data['lyAbs'] / data['lyRef' ]
+    data['lyNorm' ]    = data['ly'] / data['lyRef' ]
     
     # first get the different runs
     runs = data[csvHead]
