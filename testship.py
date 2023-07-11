@@ -3,17 +3,22 @@ from mtdConstructionDBTools import mtdcdb
 #barcodes = range(842,852,1)
 #barcodes = [f'PRE{bc:010d}' for bc in barcodes] 
 
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Insert last 6 digits of the barcod of every shipped part
-barcodes = [100023,100024,100025,100026,200040,200041,200042,200054,300013,300014]
-barcodes = [f'3211{str(bc).zfill(10)}' for bc in barcodes] # auto-format barcode
-tracking_number = '' # PLEASE insert shipping tracking number!!!!!
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#barcodes = [100027,100028,100035,100036,200031,200032,200033,200034,200047,200048,300011,300012] #UVA
+barcodes = [100029,100030,100033,100034,200035,200036,200037,200038,200030,200053,300015,300016] #PKU
 
+barcodes = [f'3211{str(bc).zfill(10)}' for bc in barcodes] # auto-format barcode
+#tracking_number = '5060629991' # PLEASE insert shipping tracking number!!!!!
+tracking_number = '2026791491' # PLEASE insert shipping tracking number!!!!! #PKU
+shipping_company = 'DHL' # PLEASE add shipping company name: DHL for shipping to USA and CHINA UPS for shipping to Italy
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # BAC Location: Bicocca, Virginia, Caltech, PKU (Peking University
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 xml = mtdcdb.xml2ship(barcodes, from_institution = 'Roma', from_location = 'Roma',
-                      to_institution = 'Caltech', to_location = 'Caltech', 'tracking_no'= tracking_number)
+                      to_institution = 'PKU', to_location = 'PKU', tracking_no = tracking_number, company = shipping_company)
 print(mtdcdb.mtdxml(xml))
 
 mtdcdb.initiateSession(user="mtdloadb", write=True)
