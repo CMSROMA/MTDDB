@@ -473,7 +473,7 @@ def xml2ship(barcodes, company = 'Some company', tracking_no = None, myroot = No
         shipments = etree.SubElement(myroot, 'SHIPMENTS')
     shipment = etree.SubElement(shipments, 'SHIPMENT')
     company = etree.SubElement(shipment, "COMPANY_NAME").text = company
-    if tracking_no == None:
+    if tracking_no == None or len(tracking_no) <= 0:
         tracking_no = str(datetime.now())
     tracking_no = etree.SubElement(shipment, "TRACKING_NUMBER").text = tracking_no
     status = etree.SubElement(shipment, "STATUS").text = 'SHIPPED'
