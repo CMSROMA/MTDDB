@@ -42,7 +42,7 @@ logginglevel = logging.INFO
 logger.setLevel(logginglevel)
 
 # Line command options
-shrtOpts = 'hrd'
+shrtOpts = 'hrdv:'
 longOpts = ['help', 'retry', 'debug']
 helpOpts = ['shows this help',
             'retry failed uploads',
@@ -71,6 +71,7 @@ for o, a in opts:
     elif o in ('-d', '--debug'):
         debug   = True
         dryrun_ = True
+
 if debug:
     logger.setLevel(logging.DEBUG)
 
@@ -171,8 +172,12 @@ for csvfile in files:
 
             # pack data
             xdataset[barcode] = xdata
-            condition = mtdcdb.newCondition(root, 'LY XTALK', xdataset, run = run_dict,
-                                            runBegin = run_begin)
+            if 'STP_PREIRR' in run_dict['NAME']:     # set version=0 for STP (producer) measurement, otherwise version=1.0 (Rome)
+                condition = mtdcdb.newCondition(root, 'XTAL DIMENSIONS', xdataset, run = run_dict,
+                                                version=0, runBegin = run_begin)                  
+            else:
+                condition = mtdcdb.newCondition(root, 'XTAL DIMENSIONS', xdataset, run = run_dict,
+                                                runBegin = run_begin)
             
         # TBC ============== to here =========================================
 

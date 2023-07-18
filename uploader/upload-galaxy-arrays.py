@@ -38,14 +38,14 @@ logginglevel = logging.INFO
 logger.setLevel(logginglevel)
 
 # Line command options
-shrtOpts = 'hrd'
+shrtOpts = 'hrdv:'
 longOpts = ['help', 'retry', 'debug']
 helpOpts = ['shows this help',
             'retry failed uploads',
-            'DEBUG mode:\n - dryrun enabled (files are not uploaded)\n - print output XML file\n'
+            'DEBUG mode:\n - dryrun enabled (files are not uploaded)\n - print output XML file\n',
             ]
 
-hlp = (f'Register measurements of ARRAYS Optical properties on OMS DB.\n'
+hlp = (f'Register measurements of ARRAYS Dimensions on OMS DB.\n'
        f'XML files required for registration are produced from .csv files in files_to_upload/{inputdir}.\n'
        f'If upload fails, the not uploaded measurements are saved in files_to_retry/{inputdir}.\n'
        f'To retry upload, run:\n\n'
@@ -174,7 +174,11 @@ for csvfile in files:
         if xdata != []:
             xdataset[barcode] = xdata
 
-    condition = mtdcdb.newCondition(root, 'XTAL DIMENSIONS', xdataset, run = run_dict,
+    if 'STP_PREIRR' in run_dict['NAME']:     # set version=0 for STP (producer) measurement, otherwise version=1.0 (Rome)
+        condition = mtdcdb.newCondition(root, 'XTAL DIMENSIONS', xdataset, run = run_dict,
+                                        version=0, runBegin = run_begin)                  
+    else:
+        condition = mtdcdb.newCondition(root, 'XTAL DIMENSIONS', xdataset, run = run_dict,
                                         runBegin = run_begin)
 
     # TBC ============== to here =========================================
