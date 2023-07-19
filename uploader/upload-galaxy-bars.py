@@ -182,7 +182,7 @@ for csvfile in files:
     else:
         time.sleep(2)
 
-        r = subprocess.run('python3 ../rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c3400 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + data['runName'] + '\'" ', shell = True, stdout = subprocess.PIPE)
+        r = subprocess.run('python3 /home/cmsdaq/MTDDB/rhapi.py --url=http://localhost:8113  ' '"select r.NAME  from mtd_cmsr.c3400 c join mtd_cmsr.datasets d on d.ID = c.CONDITION_DATA_SET_ID join  mtd_cmsr.runs r on r.ID = d.RUN_ID where r.name = \''  + data['runName'] + '\'" ', shell = True, stdout = subprocess.PIPE)
         
         status = 'Fail'
         if barcode in str(r.stdout):
