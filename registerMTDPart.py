@@ -27,10 +27,11 @@ except ImportError as e:
     geocoder = None
 
 # set constants
-laboratories = ['Roma', 'Nebraska', 'VirtualLab']
+laboratories = ['Roma', 'Nebraska', 'VirtualLab', 'Bicocca']
 labname = {'Rome': 'Roma'} # this dictionary associates the international name of a city to a lab name
 allowedParts = ['LYSOMatrix #1', 'LYSOMatrix #2', 'LYSOMatrix #3',
                 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',
+                'SiPMArray #1', 'SiPMArray #2', 'SiPMArray #3',
                 'ETROC']
 
 # configure logger
@@ -112,7 +113,7 @@ if g != None and g.city in labname:
 xmlfile = os.path.basename(sys.argv[0]).replace('.py', '.xml')
 nbarcodes = 1
 write = False
-username = None
+username = os.getlogin()
 comment = ''
 pdata = ''
 multiplicity = 16
@@ -208,6 +209,8 @@ logger.debug(f'      attributes: {attrs}')
 logger.debug(f'         Comment: {comment}')
 if len(pdata) > 0:
     logger.debug(f'   producer data: {pdata}')
+if not 'LYSO' in partType:
+    multiplicity = 0
 if multiplicity > 1:
     logger.debug(f'    Multiplicity: {multiplicity}')
 if write:
@@ -268,7 +271,7 @@ myroot = mtdcdb.root()
 partsXml = etree.SubElement(myroot, "PARTS")
 
 if tunnelUser == username:
-    mtdcdb.initiateSession(user = tunnelUser, write = write)
+    mtdcdb.initiateSession(user = tunnelUser, write = write, debug = debug, proxy = proxy)
 
 processedbarcodes = []
 
@@ -286,9 +289,9 @@ def createPart(partType, barcode, producer, batchIngot, username, laboratory,
     '''
     process data to create the part XML
     '''
-    if comment == "nan":
+    if str(comment).lower() == "nan":
         comment = ''
-    if pdata == "nan":
+    if str(pdata).lower() == "nan":
         pdata = ''
     condXML = None
     if len(pdata) > 0 or len(comment) > 0:
@@ -298,13 +301,13 @@ def createPart(partType, barcode, producer, batchIngot, username, laboratory,
         condXML = mtdcdb.newCondition(condXml, 'PART_REGISTRATION', conditions, run = runDict);
     partXML = mtdcdb.part(barcode, partType, batch = batchIngot, attributes = attrs, user = username,
                           location = laboratory, manufacturer = producer, serial = serialNumber)
-    # special treatment for parts composed by subparts
+    # special treatment for parts composed by subrparts
     if 'LYSOMatrix' in partType:
         singlextal = etree.SubElement(partXML, "CHILDREN")        
         for i in range(16):
             partSubType = 'singleBarCrystal'
             singlextal.append(mtdcdb.part(f'{barcode}-{i}', partSubType, batch = batchIngot, user = username,
-                                          location = laboratory, manufacturer = producer, serial = None))
+                                  location = laboratory, manufacturer = producer, serial = serialNumber))
         partXML.append(singlextal)
     return partXML, condXML
 
@@ -346,7 +349,7 @@ def formatBarcode(barcode, i = 0):
     
 # processing CSV file 
 if csvfile != None:
-    parts = pd.read_csv(csvfile, sep = None, engine = 'python')
+    parts = pd.read_csv(csvfile, quotechar="'")
     # normalise column headers ignoring case, leading and trailing spaces and unwanted characters
     parts.columns = parts.columns.str.lower()
     parts.columns = parts.columns.str.strip()
@@ -354,7 +357,7 @@ if csvfile != None:
 
     logger.info(parts)
 
-    for index, row in parts.iterrows():    
+    for index, row in parts.iterrows():
         partType = row['type'].strip()
         barcode = formatBarcode(row['barcode'])
         producer = row['producer']
