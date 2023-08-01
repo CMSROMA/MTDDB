@@ -81,7 +81,7 @@ os.system(f"mkdir -p {uploaderconfig.DIRPROCESSED}/{inputdir}")
 # open tunnel to dbloader for query
 os.system('ssh -f -N -L 8113:dbloader-mtd.cern.ch:8113 mtdloadb@lxplus.cern.ch')
 
-csvHeader="runName,b_rms,producer,i1,i0,i3,i2,tag,decay_time,id,pe,lyRef,geometry,b_3s_asym,b_2s_asym,time,type,ly"
+csvHeader="runName,b_rms,producer,i1,i0,i3,i2,tag,decay_time,id,pe,lyRef,geometry,b_3s_asym,b_2s_asym,time,type,dt_raw,ly"
 csvHeader_split = csvHeader.split(",")
 for csvfile in files:
 
