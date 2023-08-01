@@ -13,7 +13,7 @@ import math
 import socket
 import logging
 
-internalDebugging = False
+internalDebugging = True
 
 '''
 general services
