@@ -16,6 +16,7 @@ import getpass
 import sys
 import os
 import subprocess
+import signal
 import getopt
 import re
 import logging
@@ -416,12 +417,15 @@ if tunnelUser == username:
     mtdcdb.terminateSession(username)
 
 # check the results using rhapi.py
+# open tunnel to dbloader for rhapi query
+os.system('ssh -f -N -L 8113:dbloader-mtd.cern.ch:8113 mtdloadb@lxplus.cern.ch')
+
 logger.info('Operation summary:')
 for barcode in processedbarcodes:
     logger.info(f'Checking {barcode}')
     if write:
         time.sleep(2)
-        r = subprocess.run('python3 ./rhapi.py --url=http://localhost:8113  '
+        r = subprocess.run('python3 /home/cmsdaq/MTDDB/rhapi.py --url=http://localhost:8113  '
                            '"select * from mtd_' + database + '.parts p where p.barcode = \'' +
                            barcode + '\'" -s 10', shell = True, stdout = subprocess.PIPE)
         status = 'Fail'
@@ -435,6 +439,14 @@ logger.debug('XML file content ========================================')
 if logginglevel == logging.DEBUG:
     with open(xmlfile, 'r') as f:
         print(f.read())
+
+# search pid and close all ssh tunnel
+tunnel_pid = subprocess.check_output(['pgrep', '-f', 'ssh.*8113:dbloader-mtd.cern.ch:8113'])
+tunnel_pid = tunnel_pid.decode("utf-8")
+pid_list = tunnel_pid.split("\n")
+for pid in pid_list:
+    if pid != '':
+        os.kill(int(pid), signal.SIGKILL)
 
 exit(0)
 
