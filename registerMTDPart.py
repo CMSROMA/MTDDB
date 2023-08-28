@@ -32,7 +32,7 @@ labname = {'Rome': 'Roma'} # this dictionary associates the international name o
 allowedParts = ['LYSOMatrix #1', 'LYSOMatrix #2', 'LYSOMatrix #3',
                 'singleCrystal #1', 'singleCrystal #2', 'singleCrystal #3',
                 'SiPMArray #1', 'SiPMArray #2', 'SiPMArray #3',
-                'ETROC']
+                'ETROC', 'LGAD']
 
 # configure logger
 logger = logging.getLogger(os.path.basename(__file__))
