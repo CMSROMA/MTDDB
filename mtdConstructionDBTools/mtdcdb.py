@@ -169,7 +169,7 @@ def writeToDB(port = 50022, filename = 'filenotfound.xml', dryrun = False,
                 for subcmd in cmd:
                     print(subcmd + ' ', end = '')
                 print()
-            cp = subprocess.run(cmd, stdout = PIPE, stderr = PIPE)                
+            cp = subprocess.run(cmd, stdout = PIPE, stderr = PIPE)
             testres = cp.stdout.decode("utf-8").strip()
             if len(testres) > 0:
                 print(testres[-1], end = '', flush = True)
