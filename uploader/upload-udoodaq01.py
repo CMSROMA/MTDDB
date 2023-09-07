@@ -126,7 +126,8 @@ for csvfile in files:
         # TBC ============== from here =========================================
 
         # get run info from the csv file
-        run_dict = { 'NAME': filtered_rows.iloc[0]['runName'],
+        runName = filtered_rows.iloc[0]['runName']
+        run_dict = { 'NAME': runName,
                      'TYPE': 'PMT',
                      'NUMBER': -1,
                      'COMMENT': '',
@@ -198,13 +199,13 @@ for csvfile in files:
                 logger.info('rhapi.py output:\n'+str(r.stdout))
                 status = 'Unknown - considered as Failed'
 
-            elif bc in str(r.stdout):
+            elif runName in str(r.stdout):
                 status = 'Success'
-                csvfile_succeded.write(filtered_rows[csvHeader_split].to_csv(index=False, header=False))
+                csvfile_succeded.write(filtered_rows.to_csv(index=False, header=False))
 
             if status != 'Success':
                 n_failed += 1
-                csvfile_failed.write(filtered_rows[csvHeader_split].to_csv(index=False, header=False))
+                csvfile_failed.write(filtered_rows.to_csv(index=False, header=False))
 
             logger.info(f'Upload status for {bc}: {status}')
     if not debug:
