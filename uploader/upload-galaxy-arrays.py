@@ -106,7 +106,7 @@ for csvfile in files:
     run = list(runSet)[0]
     run_begin = None
     run_begin = data.iloc[0]['time']
-
+    
     # convert date from string to datetime
     run_begin = datetime.strptime(run_begin, '%Y-%m-%d-%H-%M') #in use time format
     run_begin = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(run_begin.timestamp()))
@@ -137,8 +137,10 @@ for csvfile in files:
             barcode = f'{bc.zfill(10)}'
             if 'FK' in barcode:
                 barcode = f'{bc.zfill(10)}'
-        if row['type'] == 'array':
-            barcode += '-'+str(int(row['bar']))
+
+        # OLD LINES TO ADD BAR NUMBER TO BARCODE
+        # if row['type'] == 'array':
+        #     barcode += '-'+str(int(row['bar']))
 
         omsVarNames = {
             'L_bar_mu'    : 'BARLENGTH', 
