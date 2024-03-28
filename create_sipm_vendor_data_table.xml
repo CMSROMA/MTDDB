@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HEADER>
+    <TYPE>
+      <EXTENSION_TABLE_NAME>SIPM_VENDOR_DATA</EXTENSION_TABLE_NAME>
+      <NAME>SIPM VENDOR DATA</NAME>
+    </TYPE>
+    <RUN>
+      <RUN_NAME>template_run_name</RUN_NAME>
+      <RUN_TYPE>template_run_type</RUN_TYPE>
+      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>
+      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>
+    </RUN>
+  </HEADER>
+  <DATA_SET>
+    <VERSION>1</VERSION>
+    <PART>
+      <KIND_OF_PART>SiPMArray</KIND_OF_PART>
+      <BARCODE>template_barcode</BARCODE>
+    </PART>
+    <DATA>
+      <RAC>template_RAC</RAC>
+      <VBRRT_0>template_VBRRT_0</VBRRT_0>
+      <VBRRT_1>template_VBRRT_1</VBRRT_1>
+      <VBRRT_2>template_VBRRT_2</VBRRT_2>
+      <VBRRT_3>template_VBRRT_3</VBRRT_3>
+      <VBRRT_4>template_VBRRT_4</VBRRT_4>
+      <VBRRT_5>template_VBRRT_5</VBRRT_5>
+      <VBRRT_6>template_VBRRT_6</VBRRT_6>
+      <VBRRT_7>template_VBRRT_7</VBRRT_7>
+      <VBRRT_8>template_VBRRT_8</VBRRT_8>
+      <VBRRT_9>template_VBRRT_9</VBRRT_9>
+      <VBRRT_10>template_VBRRT_10</VBRRT_10>
+      <VBRRT_11>template_VBRRT_11</VBRRT_11>
+      <VBRRT_12>template_VBRRT_12</VBRRT_12>
+      <VBRRT_13>template_VBRRT_13</VBRRT_13>
+      <VBRRT_14>template_VBRRT_14</VBRRT_14>
+      <VBRRT_15>template_VBRRT_15</VBRRT_15>
+    </DATA>
+  </DATA_SET>
+</ROOT>
