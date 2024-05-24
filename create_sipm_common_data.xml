@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HEADER>
+    <TYPE>
+      <EXTENSION_TABLE_NAME>SIPM_ARRAY_COMMON_DATA</EXTENSION_TABLE_NAME>
+      <NAME>SIPM ARRAY COMMON DATA</NAME>
+    </TYPE>
+    <RUN>
+      <RUN_NAME>template_run_name</RUN_NAME>
+      <RUN_TYPE>template_run_type</RUN_TYPE>
+      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>
+      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>
+    </RUN>
+  </HEADER>
+  <DATA_SET>
+    <VERSION>1</VERSION>
+    <PART>
+      <KIND_OF_PART>SiPMArray</KIND_OF_PART>
+      <BARCODE>template_barcode</BARCODE>
+    </PART>
+    <DATA>
+      <RAC>template_RAC</RAC>
+    </DATA>
+  </DATA_SET>
+</ROOT>

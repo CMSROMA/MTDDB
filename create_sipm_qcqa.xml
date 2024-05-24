@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HEADER>
+    <TYPE>
+      <EXTENSION_TABLE_NAME>SiPM_QC_QA</EXTENSION_TABLE_NAME>
+      <NAME>SiPM QC QA</NAME>
+    </TYPE>
+    <RUN>
+      <RUN_NAME>template_run_name</RUN_NAME>
+      <RUN_TYPE>template_run_type</RUN_TYPE>
+      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>
+      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>
+    </RUN>
+  </HEADER>
+  <DATA_SET>
+    <VERSION>1</VERSION>
+    <PART>
+      <KIND_OF_PART>SiPMArray</KIND_OF_PART>
+      <BARCODE>template_barcode</BARCODE>
+    </PART>
+    <DATA>
+      <CHANNEL>template_CHANNEL</CHANNEL>
+      <DARKI3V>template_DARKI3V</DARKI3V>
+      <DARKI5V>template_DARKI5V</DARKI5V>
+      <RFWD>template_RFWD</RFWD>
+      <VBRRT>template_VBRRT</VBRRT>
+    </DATA>
+  </DATA_SET>
+</ROOT>
