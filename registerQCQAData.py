@@ -74,7 +74,8 @@ for index, row in csv.iterrows():
     vbrrt = row['VB[V], 20 C']
     if int(channel) == 1:
         if row['Array status'] != 'Pass':
-            status[barcode] = row['Array status']
+            attrs = {'Global Status' : row['Array status']}
+            status[barcode] = mtdcdb.addAttributeToPart(barcode, attrs)
         rac = row['TEC[Ohm]']
         rtd = row['RTD[Ohm]']
         racs[barcode] = [{'NAME': 'RAC', 'VALUE': rac},
@@ -100,6 +101,7 @@ root = mtdcdb.root()
 condName = 'SIPM ARRAY COMMON DATA'
 condition1 = mtdcdb.newCondition(root, condName, racs, run = run_dict,
                                 runBegin = run_begin)
+
 root = mtdcdb.root()
 condName = 'SiPM QC QA'
 condition2 = mtdcdb.newCondition(root, condName, xdataset, run = run_dict,
@@ -117,3 +119,8 @@ if debug:
 if not debug:
     mtdcdb.terminateSession(user='organtin')
 
+for barcode, status in status.items():
+    mtdcdb.transfer(status, dryrun = dryrun, user='organtin')
+    if debug:
+        print(mtdcdb.mtdxml(status))
+    
