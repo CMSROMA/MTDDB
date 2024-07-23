@@ -2,8 +2,8 @@
 <ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <HEADER>
     <TYPE>
-      <EXTENSION_TABLE_NAME>SIPM_RAC</EXTENSION_TABLE_NAME>
-      <NAME>SIPM RAC</NAME>
+      <EXTENSION_TABLE_NAME>SENSOR_MODULE_CH_QCQA</EXTENSION_TABLE_NAME>
+      <NAME>SENSOR MODULE CH QCQA</NAME>
     </TYPE>
     <RUN>
       <RUN_NAME>template_run_name</RUN_NAME>
@@ -15,11 +15,17 @@
   <DATA_SET>
     <VERSION>1</VERSION>
     <PART>
-      <KIND_OF_PART>SiPMArray</KIND_OF_PART>
+      <KIND_OF_PART>SensorModule</KIND_OF_PART>
       <BARCODE>template_barcode</BARCODE>
     </PART>
     <DATA>
-      <RAC>template_RAC</RAC>
+      <CHANNEL>template_CHANNEL</CHANNEL>
+      <CHLOLEFT>template_CHLOLEFT</CHLOLEFT>
+      <CHWIDTHLEFT>template_CHWIDTHLEFT</CHWIDTHLEFT>
+      <CHLORIGHT>template_CHLORIGHT</CHLORIGHT>
+      <CHWIDTHRIGHT>template_CHWIDTHRIGHT</CHWIDTHRIGHT>
+      <BARLO>template_BARLO</BARLO>
+      <BARWIDTH>template_BARWIDTH</BARWIDTH>
     </DATA>
   </DATA_SET>
 </ROOT>

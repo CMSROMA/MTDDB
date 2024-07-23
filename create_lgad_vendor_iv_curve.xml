@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HEADER>
+    <TYPE>
+      <EXTENSION_TABLE_NAME>LGAD_VENDOR_IV_CURVE</EXTENSION_TABLE_NAME>
+      <NAME>LGAD VENDOR IV CURVE</NAME>
+    </TYPE>
+    <RUN>
+      <RUN_NAME>template_run_name</RUN_NAME>
+      <RUN_TYPE>template_run_type</RUN_TYPE>
+      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>
+      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>
+    </RUN>
+  </HEADER>
+  <DATA_SET>
+    <VERSION>1</VERSION>
+    <PART>
+      <KIND_OF_PART>LGAD</KIND_OF_PART>
+      <BARCODE>template_barcode</BARCODE>
+    </PART>
+    <DATA>
+      <vendor_leakage_current_uA>template_vendor_leakage_current_uA</vendor_leakage_current_uA>
+      <vendor_breakdown_voltage_V>template_vendor_breakdown_voltage_V</vendor_breakdown_voltage_V>
+      <vendor_category>template_vendor_category</vendor_category>
+      <currnt>template_current</currnt>
+      <voltage>template_voltage</voltage>
+    </DATA>
+  </DATA_SET>
+</ROOT>
