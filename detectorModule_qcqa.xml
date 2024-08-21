@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HEADER>
+    <TYPE>
+      <EXTENSION_TABLE_NAME>DM_QCQA</EXTENSION_TABLE_NAME>
+      <NAME>DM QCQA</NAME>
+    </TYPE>
+    <RUN>
+      <RUN_NAME>template_run_name</RUN_NAME>
+      <RUN_TYPE>template_run_type</RUN_TYPE>
+      <RUN_BEGIN_TIMESTAMP>template_run_begin</RUN_BEGIN_TIMESTAMP>
+      <RUN_END_TIMESTAMP>template_run_end</RUN_END_TIMESTAMP>
+    </RUN>
+  </HEADER>
+  <DATA_SET>
+    <VERSION>1</VERSION>
+    <PART>
+      <KIND_OF_PART>FE</KIND_OF_PART>
+      <BARCODE>template_barcode</BARCODE>
+    </PART>
+    <DATA>
+      <TCuL>template_TCuL</TCuL>
+      <TCuR>template_TCuR</TCuR>
+      <DeltaT_TL>template_DeltaT_TL</DeltaT_TL>
+      <DeltaT_TR>template_DeltaT_TR</DeltaT_TR>
+      <DeltaT_BL>template_DeltaT_BL</DeltaT_BL>
+      <DeltaT_BR>template_DeltaT_BR</DeltaT_BR>
+      <RAC>template_RAC</RAC>
+    </DATA>
+  </DATA_SET>
+</ROOT>

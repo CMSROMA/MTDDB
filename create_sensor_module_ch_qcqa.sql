@@ -22,7 +22,9 @@ CREATE TABLE CMS_MTD_TMING_COND.SENSOR_MODULE_CH_QCQA
   CHLORIGHT	NUMBER	NOT NULL,
   CHWIDTHRIGHT	NUMBER	NOT NULL,
   BARLO		NUMBER	NOT NULL,
-  BARWIDTH	NUMBER	NOT NULL
+  BARWIDTH	NUMBER	NOT NULL,
+  TEMP		NUMBER  /* temp can be null for some channel: it is a common property of
+                           the whole assembly */       
 )
 PCTUSED    0
 PCTFREE    10

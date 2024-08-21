@@ -26,6 +26,10 @@
       <CHWIDTHRIGHT>template_CHWIDTHRIGHT</CHWIDTHRIGHT>
       <BARLO>template_BARLO</BARLO>
       <BARWIDTH>template_BARWIDTH</BARWIDTH>
+      <!-- The following field can be empty but for 1 channel -->
+      <!-- TEMP is a property of the whole assembly -->
+      <!-- It is recommended to assign the value of TEMP to each channel, however -->
+      <TEMP>template_TEMP</TEMP>
     </DATA>
   </DATA_SET>
 </ROOT>
